@@ -1,0 +1,112 @@
+@use 'styles/breakpoints' as bp;
+
+.auth-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 100dvh;
+  background-color: var(--color-surface);
+
+  @include bp.respond-up(bp.$breakpoint-auth-split) {
+    grid-template-columns: 46fr 54fr;
+  }
+}
+
+.auth-layout__aside {
+  display: none;
+  position: relative;
+  overflow: hidden;
+  padding: var(--space-8) var(--space-6);
+  background-color: var(--color-canvas);
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  &::before {
+    inset-block-start: -6rem;
+    inset-inline-start: -8rem;
+    width: 22rem;
+    height: 22rem;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-primary) 12%, transparent),
+      transparent 70%
+    );
+  }
+
+  &::after {
+    inset-block-end: -10rem;
+    inset-inline-end: -6rem;
+    width: 26rem;
+    height: 26rem;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--brand-accent) 10%, transparent),
+      transparent 70%
+    );
+  }
+
+  @include bp.respond-up(bp.$breakpoint-auth-split) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  @include bp.respond-up(bp.$breakpoint-desktop) {
+    padding: var(--space-10) var(--space-8);
+  }
+}
+
+.auth-layout__aside-inner {
+  position: relative;
+  width: 100%;
+  max-width: 30rem;
+}
+
+.auth-layout__title {
+  font-size: clamp(1.5rem, 2.6vw, 2.125rem);
+  color: var(--color-primary);
+}
+
+.auth-layout__subtitle {
+  margin-top: var(--space-4);
+  max-width: 26rem;
+  font-size: clamp(var(--text-base), 1.1vw, var(--text-md));
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-secondary);
+}
+
+.auth-layout__illustration {
+  width: 100%;
+  height: auto;
+  margin-top: var(--space-7);
+  mix-blend-mode: multiply;
+}
+
+.auth-layout__panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) var(--space-5);
+
+  @include bp.respond-up(bp.$breakpoint-mobile) {
+    padding-inline: var(--space-8);
+  }
+
+  @include bp.respond-up(bp.$breakpoint-auth-split) {
+    padding: var(--space-9) var(--space-7);
+  }
+}
+
+.auth-layout__panel-inner {
+  width: 100%;
+  max-width: 32rem;
+
+  @include bp.respond-up(bp.$breakpoint-auth-split) {
+    max-width: 28rem;
+  }
+}

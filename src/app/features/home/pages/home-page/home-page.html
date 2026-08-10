@@ -1,0 +1,76 @@
+<header class="page-header">
+  <h1 class="page-header__title">Inicio</h1>
+  <p class="page-header__subtitle">
+    Bienvenido a UTP+ Parking, el portal de acceso a los estacionamientos de la universidad.
+  </p>
+</header>
+
+<div class="home__grid">
+  <app-ui-card>
+    <div class="session__head">
+      <app-user-avatar [name]="username() ?? ''" [size]="56" />
+      <div class="session__identity">
+        <p class="session__greeting">
+          Has iniciado sesión como <strong>{{ username() }}</strong>
+        </p>
+        <div class="session__roles">
+          <span class="session__roles-label">Roles:</span>
+          @for (role of roles(); track role) {
+            <app-ui-badge tone="brand">{{ role }}</app-ui-badge>
+          } @empty {
+            <app-ui-badge tone="neutral">Sin roles asignados</app-ui-badge>
+          }
+        </div>
+      </div>
+    </div>
+
+    <dl class="session__data">
+      <div class="session__row">
+        <dt>Usuario</dt>
+        <dd>{{ username() }}</dd>
+      </div>
+      <div class="session__row">
+        <dt>Identificador</dt>
+        <dd>{{ session()?.userId ?? 'No disponible' }}</dd>
+      </div>
+      <div class="session__row">
+        <dt>Perfil</dt>
+        <dd>{{ isSae() ? 'Personal SAE' : 'Usuario de la comunidad UTP' }}</dd>
+      </div>
+    </dl>
+
+    @if (isSae()) {
+      <app-ui-alert tone="info">
+        Como <strong>Personal SAE</strong>, próximamente podrás revisar y responder las solicitudes
+        de estacionamiento asignadas a tu campus.
+      </app-ui-alert>
+    } @else {
+      <app-ui-alert tone="info">
+        Próximamente podrás registrar tus vehículos y solicitar el acceso al estacionamiento desde
+        esta misma pantalla.
+      </app-ui-alert>
+    }
+  </app-ui-card>
+
+  <section class="home__upcoming" aria-labelledby="upcoming-title">
+    <div class="home__upcoming-head">
+      <h2 id="upcoming-title" class="home__upcoming-title">Módulos en camino</h2>
+      <app-ui-badge tone="warning">
+        <app-ui-icon name="sparkles" [size]="13" />
+        Próximamente
+      </app-ui-badge>
+    </div>
+
+    <div class="home__modules">
+      @for (module of upcomingModules(); track module.title) {
+        <app-ui-card>
+          <span class="module__icon">
+            <app-ui-icon [name]="module.icon" [size]="22" />
+          </span>
+          <h3 class="module__title">{{ module.title }}</h3>
+          <p class="module__description">{{ module.description }}</p>
+        </app-ui-card>
+      }
+    </div>
+  </section>
+</div>

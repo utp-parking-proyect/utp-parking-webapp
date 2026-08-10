@@ -1,0 +1,16 @@
+$breakpoint-mobile: 576px;
+$breakpoint-auth-split: 840px;
+$breakpoint-tablet: 992px;
+$breakpoint-desktop: 1200px;
+
+@mixin respond-up($breakpoint) {
+  @media (min-width: $breakpoint) {
+    @content;
+  }
+}
+
+@mixin respond-down($breakpoint) {
+  @media (max-width: ($breakpoint - 1)) {
+    @content;
+  }
+}
