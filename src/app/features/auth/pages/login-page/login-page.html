@@ -1,0 +1,78 @@
+<app-brand-logo class="login__logo" [height]="61" />
+
+<div class="login__intro">
+  <h1 class="login__title">¡Hola!</h1>
+  <p class="login__subtitle">Ingresa tus datos para <strong>iniciar sesión.</strong></p>
+</div>
+
+<form class="login__form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <app-ui-form-field
+    label="Usuario: código UTP"
+    inputId="username"
+    hint="Ejemplo de usuario: U1533148 (no digitar el @utp.edu.pe)"
+    [invalid]="credentialsRejected()"
+    [error]="errorFor(form.controls.username, 'Ingresa tu código UTP.')"
+  >
+    <input
+      id="username"
+      class="ui-input"
+      type="text"
+      formControlName="username"
+      autocomplete="username"
+      placeholder="Ingresa tu código UTP"
+      (input)="dismissError()"
+    />
+    <span class="ui-affix" [class.login__affix--error]="credentialsRejected()">
+      <app-ui-icon [name]="credentialsRejected() ? 'user-slash' : 'user'" />
+    </span>
+  </app-ui-form-field>
+
+  <div class="login__password-group">
+    <app-ui-form-field
+      label="Contraseña"
+      inputId="password"
+      [invalid]="credentialsRejected()"
+      [error]="errorFor(form.controls.password, 'Ingresa tu contraseña.')"
+    >
+      <input
+        id="password"
+        class="ui-input"
+        [type]="showPassword() ? 'text' : 'password'"
+        formControlName="password"
+        autocomplete="current-password"
+        placeholder="Ingresa tu contraseña"
+        (input)="dismissError()"
+      />
+      @if (credentialsRejected()) {
+        <span class="ui-affix login__affix--error">
+          <app-ui-icon name="x" />
+        </span>
+      } @else {
+        <button
+          type="button"
+          class="ui-affix"
+          [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+          (click)="togglePasswordVisibility()"
+        >
+          <app-ui-icon [name]="showPassword() ? 'eye-off' : 'eye'" />
+        </button>
+      }
+    </app-ui-form-field>
+
+    @if (errorMessage()) {
+      <p class="login__error" role="alert">
+        <app-ui-icon name="alert-triangle" [size]="16" />
+        <span>{{ errorMessage() }}</span>
+      </p>
+    }
+  </div>
+
+  <app-ui-button type="submit" size="lg" [block]="true" [loading]="submitting()">
+    {{ submitting() ? 'Ingresando…' : 'Iniciar sesión' }}
+  </app-ui-button>
+</form>
+
+<p class="login__help">
+  <app-ui-icon name="help-circle" [size]="16" />
+  <span>¿Problemas para ingresar? Comunícate con el SAE de tu campus.</span>
+</p>

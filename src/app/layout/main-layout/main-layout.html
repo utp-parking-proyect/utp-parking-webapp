@@ -1,0 +1,95 @@
+<div class="shell" [class.shell--expanded]="sidebarExpanded()">
+  <aside class="shell__sidebar">
+    <button
+      type="button"
+      class="shell__toggle"
+      [attr.aria-expanded]="sidebarExpanded()"
+      [attr.aria-label]="sidebarExpanded() ? 'Contraer menú' : 'Expandir menú'"
+      (click)="toggleSidebar()"
+    >
+      <app-ui-icon [name]="sidebarExpanded() ? 'arrow-left' : 'menu'" [size]="22" />
+    </button>
+
+    <nav class="shell__nav" aria-label="Navegación principal">
+      @for (item of navItems; track item.route) {
+        <a
+          class="shell__nav-item"
+          [routerLink]="item.route"
+          routerLinkActive="shell__nav-item--active"
+          (click)="closeSidebar()"
+        >
+          <app-ui-icon [name]="item.icon" [size]="22" />
+          <span class="shell__nav-label">{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+  </aside>
+
+  @if (sidebarExpanded()) {
+    <div class="shell__scrim" (click)="closeSidebar()"></div>
+  }
+
+  <div class="shell__body">
+    <header class="shell__topbar">
+      <div class="shell__topbar-start">
+        <button
+          type="button"
+          class="shell__menu-toggle"
+          aria-label="Abrir menú"
+          (click)="toggleSidebar()"
+        >
+          <app-ui-icon name="menu" [size]="22" />
+        </button>
+
+        <a class="shell__brand" routerLink="/home" aria-label="UTP+ Parking, ir al inicio">
+          <app-brand-logo [height]="36" />
+        </a>
+      </div>
+
+      <div class="shell__topbar-end">
+        <div class="shell__user">
+          <button
+            type="button"
+            class="shell__user-trigger"
+            [attr.aria-expanded]="userMenuOpen()"
+            aria-haspopup="menu"
+            (click)="toggleUserMenu()"
+          >
+            <span class="shell__user-meta">
+              <span class="shell__user-greeting">Hola, <strong>{{ username() }}</strong></span>
+              <span class="shell__user-role">{{ roleLabel() }}</span>
+            </span>
+            <app-user-avatar [name]="username() ?? ''" [size]="40" />
+            <app-ui-icon
+              class="shell__user-caret"
+              [class.shell__user-caret--open]="userMenuOpen()"
+              name="chevron-down"
+              [size]="18"
+            />
+          </button>
+
+          @if (userMenuOpen()) {
+            <div class="shell__menu-scrim" (click)="closeUserMenu()"></div>
+            <div class="shell__menu" role="menu">
+              <div class="shell__menu-header">
+                <app-user-avatar [name]="username() ?? ''" [size]="36" />
+                <div class="shell__menu-identity">
+                  <strong>{{ username() }}</strong>
+                  <span>{{ roles().join(' · ') }}</span>
+                </div>
+              </div>
+              <button type="button" class="shell__menu-item" role="menuitem" (click)="logout()">
+                <app-ui-icon name="log-out" [size]="18" />
+                <span>Cerrar sesión</span>
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    </header>
+
+    <main class="shell__content">
+      <router-outlet />
+    </main>
+  </div>
+</div>
