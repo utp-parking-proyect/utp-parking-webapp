@@ -56,10 +56,10 @@
             (click)="toggleUserMenu()"
           >
             <span class="shell__user-meta">
-              <span class="shell__user-greeting">Hola, <strong>{{ username() }}</strong></span>
+              <span class="shell__user-greeting">Hola, <strong>{{ displayName() }}</strong></span>
               <span class="shell__user-role">{{ roleLabel() }}</span>
             </span>
-            <app-user-avatar [name]="username() ?? ''" [size]="40" />
+            <app-user-avatar [name]="displayName()" [size]="40" />
             <app-ui-icon
               class="shell__user-caret"
               [class.shell__user-caret--open]="userMenuOpen()"
@@ -72,9 +72,9 @@
             <div class="shell__menu-scrim" (click)="closeUserMenu()"></div>
             <div class="shell__menu" role="menu">
               <div class="shell__menu-header">
-                <app-user-avatar [name]="username() ?? ''" [size]="36" />
+                <app-user-avatar [name]="displayName()" [size]="36" />
                 <div class="shell__menu-identity">
-                  <strong>{{ username() }}</strong>
+                  <strong>{{ displayName() }}</strong>
                   <span>{{ roles().join(' · ') }}</span>
                 </div>
               </div>

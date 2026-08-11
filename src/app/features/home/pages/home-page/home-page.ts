@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { ROLE_SAE } from '../../../../core/auth/auth.constants';
 import { AuthService } from '../../../../core/auth/auth.service';
+import { CurrentUserService } from '../../../../core/portal/current-user.service';
 import { UiAlert } from '../../../../shared/components/ui-alert/ui-alert';
 import { UiBadge } from '../../../../shared/components/ui-badge/ui-badge';
 import { UiCard } from '../../../../shared/components/ui-card/ui-card';
@@ -22,11 +23,18 @@ interface UpcomingModule {
 })
 export class HomePage {
   private readonly authService = inject(AuthService);
+  private readonly currentUserService = inject(CurrentUserService);
 
   protected readonly username = this.authService.username;
   protected readonly roles = this.authService.roles;
   protected readonly session = this.authService.session;
   protected readonly isSae = computed(() => this.authService.hasRole(ROLE_SAE));
+
+  protected readonly profile = this.currentUserService.profile;
+  protected readonly displayName = this.currentUserService.displayName;
+  protected readonly campusName = this.currentUserService.campusName;
+  protected readonly profileLoading = this.currentUserService.isLoading;
+  protected readonly profileFailed = this.currentUserService.hasFailed;
 
   protected readonly upcomingModules = computed<UpcomingModule[]>(() =>
     this.isSae()
