@@ -1,0 +1,87 @@
+@use 'styles/breakpoints' as bp;
+
+:host {
+  display: block;
+}
+
+app-ui-card {
+  height: 100%;
+}
+
+.request__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.request__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.request__identity {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.request__plate {
+  font-size: var(--text-md);
+  letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
+}
+
+.request__type {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.request__data {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 0;
+}
+
+.request__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  font-size: var(--text-sm);
+
+  dt {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-text-muted);
+
+    app-ui-icon {
+      flex: 0 0 auto;
+    }
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 700;
+    color: var(--color-text);
+    text-align: end;
+  }
+
+  @include bp.respond-down(bp.$breakpoint-mobile) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+
+    dd {
+      text-align: start;
+    }
+  }
+}

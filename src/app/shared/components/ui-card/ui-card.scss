@@ -1,0 +1,16 @@
+@use 'styles/mixins' as m;
+@use 'styles/breakpoints' as bp;
+
+:host {
+  @include m.surface-card;
+  display: block;
+  box-shadow: var(--shadow-sm);
+}
+
+:host(.ui-card--padded) {
+  padding: var(--space-6);
+
+  @include bp.respond-down(bp.$breakpoint-mobile) {
+    padding: var(--space-4);
+  }
+}

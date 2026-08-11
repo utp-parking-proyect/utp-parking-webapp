@@ -1,0 +1,69 @@
+@use 'styles/breakpoints' as bp;
+
+:host {
+  display: block;
+}
+
+.login__logo {
+  margin-bottom: var(--space-10);
+
+  @include bp.respond-down(bp.$breakpoint-auth-split) {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+.login__title {
+  font-size: 2rem;
+}
+
+.login__subtitle {
+  margin-top: var(--space-3);
+  color: var(--color-text-secondary);
+
+  strong {
+    color: var(--color-text);
+    font-weight: 700;
+  }
+}
+
+.login__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+  margin-top: var(--space-9);
+}
+
+.login__affix--error {
+  color: var(--color-danger);
+}
+
+.login__error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-danger);
+
+  app-ui-icon {
+    margin-top: 1px;
+  }
+}
+
+.login__help {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-top: var(--space-9);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+
+  app-ui-icon {
+    margin-top: 1px;
+  }
+}

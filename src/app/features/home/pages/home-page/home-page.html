@@ -1,0 +1,36 @@
+<section class="hero">
+  <div class="hero__text">
+    <h1 class="hero__title">Bienvenido a UTP+ Parking</h1>
+    <p class="hero__subtitle">El portal de acceso a los estacionamientos de la universidad.</p>
+  </div>
+
+  <img
+    class="hero__illustration"
+    src="illustrations/parking-welcome.webp"
+    alt=""
+    width="960"
+    height="642"
+  />
+</section>
+
+<section class="actions" aria-labelledby="actions-title">
+  <h2 id="actions-title" class="actions__title">¿Qué deseas hacer?</h2>
+
+  <div class="actions__grid">
+    @for (action of actions; track action.title) {
+      <a class="action" [routerLink]="action.route" [queryParams]="action.queryParams">
+        <app-ui-card>
+          <span class="action__icon">
+            <app-ui-icon [name]="action.icon" [size]="22" />
+          </span>
+          <h3 class="action__title">{{ action.title }}</h3>
+          <p class="action__description">{{ action.description }}</p>
+          <span class="action__cta">
+            {{ action.cta }}
+            <app-ui-icon name="arrow-right" [size]="16" />
+          </span>
+        </app-ui-card>
+      </a>
+    }
+  </div>
+</section>

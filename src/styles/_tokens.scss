@@ -1,0 +1,93 @@
+:root {
+  --brand-ink: #111114;
+  --brand-accent: #ee4266;
+  --brand-accent-strong: #d62e51;
+  --brand-accent-soft: #fdeaef;
+
+  --color-primary: #5b36f2;
+  --color-primary-hover: #4a27d8;
+  --color-primary-active: #3d1fb8;
+  --color-primary-soft: #ece7fe;
+  --color-primary-softer: #f5f2ff;
+
+  --color-canvas: #edf2fb;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f7f9fd;
+  --color-surface-sunken: #e7eefa;
+
+  --color-autofill: #f0f4ff;
+
+  --color-border: #e3e8f0;
+  --color-border-strong: #cbd5e6;
+  --color-border-focus: var(--color-primary);
+
+  --color-text: #16162b;
+  --color-text-secondary: #4a4f66;
+  --color-text-muted: #737b93;
+  --color-text-disabled: #a3aabd;
+  --color-text-inverse: #ffffff;
+
+  --color-success: #12813f;
+  --color-success-bg: #dff5e6;
+  --color-warning: #9a5b06;
+  --color-warning-bg: #fdf0d5;
+  --color-danger: #c92a37;
+  --color-danger-bg: #fdeaec;
+  --color-danger-border: #f5c2c7;
+  --color-info: var(--color-primary);
+  --color-info-bg: var(--color-primary-soft);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 2rem;
+  --space-8: 2.5rem;
+  --space-9: 3rem;
+  --space-10: 4rem;
+
+  --radius-control: 0.25rem;
+  --radius-xs: 0.375rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-pill: 999px;
+
+  --shadow-xs: 0 1px 2px rgba(22, 22, 43, 0.05);
+  --shadow-sm: 0 1px 3px rgba(22, 22, 43, 0.06), 0 1px 2px rgba(22, 22, 43, 0.04);
+  --shadow-md: 0 4px 16px rgba(22, 22, 43, 0.07);
+  --shadow-lg: 0 12px 32px rgba(22, 22, 43, 0.1);
+  --shadow-focus: 0 0 0 3px rgba(91, 54, 242, 0.18);
+  --shadow-focus-danger: 0 0 0 3px rgba(201, 42, 55, 0.16);
+
+  --font-sans: 'Lato', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.125rem;
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --control-height-md: 2.25rem;
+  --control-height-lg: 2.5rem;
+
+  --topbar-height: 4.5rem;
+  --sidebar-width: 16.5rem;
+  --sidebar-rail: 5.5rem;
+
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+
+  --z-drawer: 40;
+  --z-overlay: 30;
+  --z-dropdown: 50;
+}

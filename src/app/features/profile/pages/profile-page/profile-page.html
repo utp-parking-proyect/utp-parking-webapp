@@ -1,0 +1,66 @@
+<header class="page-header">
+  <h1 class="page-header__title">Mi perfil</h1>
+  <p class="page-header__subtitle">
+    Datos de tu cuenta institucional y de la sesión con la que ingresaste.
+  </p>
+</header>
+
+<app-ui-card>
+  <div class="session__head">
+    <app-user-avatar [name]="displayName()" [size]="56" />
+    <div class="session__identity">
+      <p class="session__greeting">
+        Has iniciado sesión como <strong>{{ displayName() }}</strong>
+      </p>
+      <div class="session__roles">
+        <span class="session__roles-label">Roles:</span>
+        @for (role of roleLabels(); track role) {
+          <app-ui-badge tone="brand">{{ role }}</app-ui-badge>
+        } @empty {
+          <app-ui-badge tone="neutral">Sin roles asignados</app-ui-badge>
+        }
+      </div>
+    </div>
+  </div>
+
+  <dl class="session__data">
+    <div class="session__row">
+      <dt>Usuario</dt>
+      <dd>{{ username() }}</dd>
+    </div>
+    @if (profile(); as user) {
+      <div class="session__row">
+        <dt>Nombres</dt>
+        <dd>{{ user.name }}</dd>
+      </div>
+      <div class="session__row">
+        <dt>Apellidos</dt>
+        <dd>{{ user.lastname }}</dd>
+      </div>
+      <div class="session__row">
+        <dt>Correo institucional</dt>
+        <dd>{{ user.institutionalEmail }}</dd>
+      </div>
+      <div class="session__row">
+        <dt>Carrera</dt>
+        <dd>{{ user.career }}</dd>
+      </div>
+      <div class="session__row">
+        <dt>Campus</dt>
+        <dd>{{ campusName() ?? 'Sin campus asignado' }}</dd>
+      </div>
+    }
+    <div class="session__row">
+      <dt>Perfil</dt>
+      <dd>{{ isSae() ? 'Personal SAE' : 'Usuario de la comunidad UTP' }}</dd>
+    </div>
+  </dl>
+
+  @if (profileLoading()) {
+    <app-ui-alert tone="info">Cargando los datos de tu perfil…</app-ui-alert>
+  } @else if (profileFailed()) {
+    <app-ui-alert tone="danger">
+      No pudimos cargar los datos de tu perfil. Se muestra la información disponible en tu sesión.
+    </app-ui-alert>
+  }
+</app-ui-card>

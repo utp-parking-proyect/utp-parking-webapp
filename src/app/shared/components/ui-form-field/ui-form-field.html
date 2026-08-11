@@ -1,0 +1,17 @@
+<label class="ui-field__label" [attr.for]="inputId()">{{ label() }}</label>
+
+<div class="ui-field__control" [class.ui-field__control--invalid]="showInvalid()">
+  <ng-content />
+</div>
+
+@if (error()) {
+  <p class="ui-field__error">
+    <app-ui-icon name="alert-circle" [size]="14" />
+    <span>{{ error() }}</span>
+  </p>
+} @else if (hint()) {
+  <p class="ui-field__hint">
+    <app-ui-icon name="info" [size]="14" />
+    <span>{{ hint() }}</span>
+  </p>
+}

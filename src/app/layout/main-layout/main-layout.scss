@@ -1,0 +1,389 @@
+@use 'styles/breakpoints' as bp;
+
+.shell {
+  display: flex;
+  min-height: 100dvh;
+}
+
+.shell__sidebar {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-start: 0;
+  z-index: var(--z-drawer);
+  display: flex;
+  flex-direction: column;
+  width: var(--sidebar-rail);
+  background-color: var(--color-surface);
+  border-inline-end: 1px solid var(--color-border);
+  transition: width var(--transition-base), transform var(--transition-base);
+
+  .shell--expanded & {
+    width: var(--sidebar-width);
+    box-shadow: var(--shadow-lg);
+  }
+
+  @include bp.respond-down(bp.$breakpoint-tablet) {
+    transform: translateX(-100%);
+
+    .shell--expanded & {
+      transform: translateX(0);
+    }
+  }
+}
+
+.shell__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--sidebar-rail);
+  height: var(--topbar-height);
+  border: 0;
+  background: linear-gradient(135deg, #ff7a7a, var(--brand-accent));
+  color: var(--color-text-inverse);
+  cursor: pointer;
+  transition: filter var(--transition-fast);
+
+  .shell--expanded & {
+    width: 100%;
+    justify-content: flex-start;
+    padding-inline-start: var(--space-6);
+  }
+
+  &:hover {
+    filter: brightness(1.05);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.6);
+  }
+}
+
+.shell__nav {
+  display: flex;
+  flex-direction: column;
+  padding-block: var(--space-4);
+  overflow-y: auto;
+}
+
+.shell__nav-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: 4.5rem;
+  padding-inline: var(--space-2);
+  color: var(--color-text-secondary);
+  text-align: center;
+  text-decoration: none;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset-block: 0.5rem;
+    inset-inline-start: 0;
+    width: 3px;
+    border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+    background-color: transparent;
+    transition: background-color var(--transition-fast);
+  }
+
+  &:hover {
+    color: var(--color-primary);
+    background-color: var(--color-primary-softer);
+    text-decoration: none;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--color-primary);
+  }
+
+  .shell--expanded & {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: var(--space-4);
+    min-height: 3.5rem;
+    padding-inline: var(--space-6);
+    text-align: start;
+  }
+}
+
+.shell__nav-item--active {
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+  font-weight: 700;
+
+  &::before {
+    background-color: var(--color-primary);
+  }
+}
+
+.shell__nav-label {
+  font-size: var(--text-xs);
+  line-height: 1.2;
+
+  .shell--expanded & {
+    font-size: var(--text-base);
+  }
+}
+
+.shell__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  background-color: rgba(22, 22, 43, 0.45);
+}
+
+.shell__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  margin-inline-start: var(--sidebar-rail);
+
+  @include bp.respond-down(bp.$breakpoint-tablet) {
+    margin-inline-start: 0;
+  }
+}
+
+.shell__topbar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--z-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  height: var(--topbar-height);
+  padding-inline: var(--space-6);
+  background-color: var(--color-surface);
+  border-block-end: 1px solid var(--color-border);
+
+  @include bp.respond-down(bp.$breakpoint-mobile) {
+    padding-inline: var(--space-4);
+  }
+}
+
+.shell__topbar-start {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.shell__menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background-color: var(--brand-accent-soft);
+  color: var(--brand-accent-strong);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+  }
+
+  @include bp.respond-down(bp.$breakpoint-tablet) {
+    display: inline-flex;
+  }
+}
+
+.shell__brand {
+  display: inline-flex;
+
+  &:hover {
+    text-decoration: none;
+  }
+}
+
+.shell__topbar-end {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.shell__user {
+  position: relative;
+}
+
+.shell__user-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-1);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+
+  &:hover {
+    background-color: var(--color-surface-muted);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+  }
+}
+
+.shell__user-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.25;
+
+  @include bp.respond-down(bp.$breakpoint-mobile) {
+    display: none;
+  }
+}
+
+.shell__user-greeting {
+  font-size: var(--text-base);
+  color: var(--color-text);
+
+  strong {
+    font-weight: 700;
+  }
+}
+
+/* Segunda línea del saludo: el código UTP. */
+.shell__user-code {
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+/* Rol a la izquierda del saludo, separado por un divisor, como el portal UTP. */
+.shell__user-role {
+  padding-inline-end: var(--space-4);
+  margin-inline-end: var(--space-1);
+  border-inline-end: 1px solid var(--color-border);
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+
+  @include bp.respond-down(bp.$breakpoint-mobile) {
+    display: none;
+  }
+}
+
+.shell__user-caret {
+  color: var(--color-text-muted);
+  transition: transform var(--transition-fast);
+}
+
+.shell__user-caret--open {
+  transform: rotate(180deg);
+}
+
+.shell__menu-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dropdown);
+}
+
+.shell__menu {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-3));
+  inset-inline-end: 0;
+  z-index: calc(var(--z-dropdown) + 1);
+  min-width: 15rem;
+  padding: var(--space-2);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.shell__menu-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-block-end: 1px solid var(--color-border);
+  margin-block-end: var(--space-2);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  /* Es un enlace: neutralizamos el color y el subrayado globales de `a`. */
+  color: var(--color-text);
+  transition: background-color var(--transition-fast);
+
+  &:hover {
+    background-color: var(--color-primary-softer);
+    text-decoration: none;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+  }
+}
+
+.shell__menu-header-caret {
+  margin-inline-start: auto;
+  color: var(--color-text-muted);
+}
+
+.shell__menu-identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+
+  strong {
+    font-size: var(--text-base);
+  }
+
+  span {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.shell__menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--text-base);
+  text-align: start;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+
+  &:hover {
+    background-color: var(--color-danger-bg);
+    color: var(--color-danger);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+  }
+}
+
+.shell__content {
+  flex: 1;
+  padding: var(--space-7) var(--space-6) var(--space-9);
+  background-color: var(--color-canvas);
+
+  @include bp.respond-down(bp.$breakpoint-mobile) {
+    padding: var(--space-5) var(--space-4) var(--space-8);
+  }
+}

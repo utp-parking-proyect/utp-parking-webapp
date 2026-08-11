@@ -1,0 +1,27 @@
+<ng-template #content>
+  @if (loading()) {
+    <span class="ui-button__spinner" aria-hidden="true"></span>
+  }
+  <ng-content />
+</ng-template>
+
+@if (routerLink(); as link) {
+  <a
+    class="ui-button"
+    [class]="classes()"
+    [routerLink]="link"
+    [queryParams]="queryParams()"
+    [attr.aria-disabled]="disabled() || null"
+  >
+    <ng-container [ngTemplateOutlet]="content" />
+  </a>
+} @else {
+  <button
+    class="ui-button"
+    [class]="classes()"
+    [attr.type]="type()"
+    [disabled]="disabled() || loading()"
+  >
+    <ng-container [ngTemplateOutlet]="content" />
+  </button>
+}

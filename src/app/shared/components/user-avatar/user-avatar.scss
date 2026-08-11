@@ -1,0 +1,15 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: calc(var(--avatar-size, 40) * 1px);
+  height: calc(var(--avatar-size, 40) * 1px);
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), #8a6bff);
+  color: var(--color-text-inverse);
+  font-size: calc(var(--avatar-size, 40) * 0.34px);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
