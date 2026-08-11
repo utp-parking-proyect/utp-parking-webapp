@@ -8,10 +8,10 @@
 <div class="home__grid">
   <app-ui-card>
     <div class="session__head">
-      <app-user-avatar [name]="username() ?? ''" [size]="56" />
+      <app-user-avatar [name]="displayName()" [size]="56" />
       <div class="session__identity">
         <p class="session__greeting">
-          Has iniciado sesión como <strong>{{ username() }}</strong>
+          Has iniciado sesión como <strong>{{ displayName() }}</strong>
         </p>
         <div class="session__roles">
           <span class="session__roles-label">Roles:</span>
@@ -29,6 +29,28 @@
         <dt>Usuario</dt>
         <dd>{{ username() }}</dd>
       </div>
+      @if (profile(); as user) {
+        <div class="session__row">
+          <dt>Nombre</dt>
+          <dd>{{ user.name }}</dd>
+        </div>
+        <div class="session__row">
+          <dt>Apellido</dt>
+          <dd>{{ user.lastname }}</dd>
+        </div>
+        <div class="session__row">
+          <dt>Correo institucional</dt>
+          <dd>{{ user.institutionalEmail }}</dd>
+        </div>
+        <div class="session__row">
+          <dt>Carrera</dt>
+          <dd>{{ user.career }}</dd>
+        </div>
+        <div class="session__row">
+          <dt>Campus</dt>
+          <dd>{{ campusName() ?? 'Sin campus asignado' }}</dd>
+        </div>
+      }
       <div class="session__row">
         <dt>Identificador</dt>
         <dd>{{ session()?.userId ?? 'No disponible' }}</dd>
@@ -38,6 +60,14 @@
         <dd>{{ isSae() ? 'Personal SAE' : 'Usuario de la comunidad UTP' }}</dd>
       </div>
     </dl>
+
+    @if (profileLoading()) {
+      <app-ui-alert tone="info">Cargando los datos de tu perfil…</app-ui-alert>
+    } @else if (profileFailed()) {
+      <app-ui-alert tone="danger">
+        No pudimos cargar los datos de tu perfil. Se muestra la información disponible en tu sesión.
+      </app-ui-alert>
+    }
 
     @if (isSae()) {
       <app-ui-alert tone="info">

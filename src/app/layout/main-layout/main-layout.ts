@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ROLE_SAE } from '../../core/auth/auth.constants';
 import { AuthService } from '../../core/auth/auth.service';
+import { CurrentUserService } from '../../core/portal/current-user.service';
 import { BrandLogo } from '../../shared/components/brand-logo/brand-logo';
 import { IconName, UiIcon } from '../../shared/components/ui-icon/ui-icon';
 import { UserAvatar } from '../../shared/components/user-avatar/user-avatar';
@@ -21,10 +22,12 @@ interface NavItem {
 })
 export class MainLayout {
   private readonly authService = inject(AuthService);
+  private readonly currentUserService = inject(CurrentUserService);
   private readonly router = inject(Router);
 
   protected readonly username = this.authService.username;
   protected readonly roles = this.authService.roles;
+  protected readonly displayName = this.currentUserService.displayName;
   protected readonly isSae = computed(() => this.authService.hasRole(ROLE_SAE));
   protected readonly roleLabel = computed(() => (this.isSae() ? 'Personal SAE' : 'Usuario'));
 
