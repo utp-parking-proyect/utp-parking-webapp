@@ -16,6 +16,7 @@
           class="shell__nav-item"
           [routerLink]="item.route"
           routerLinkActive="shell__nav-item--active"
+          [routerLinkActiveOptions]="{ exact: !!item.exact }"
           (click)="closeSidebar()"
         >
           <app-ui-icon [name]="item.icon" [size]="22" />
@@ -55,9 +56,13 @@
             aria-haspopup="menu"
             (click)="toggleUserMenu()"
           >
+            @if (primaryRoleLabel(); as role) {
+              <span class="shell__user-role">{{ role }}</span>
+            }
+
             <span class="shell__user-meta">
-              <span class="shell__user-greeting">Hola, <strong>{{ displayName() }}</strong></span>
-              <span class="shell__user-role">{{ roleLabel() }}</span>
+              <span class="shell__user-greeting">Hola, <strong>{{ firstName() }}</strong></span>
+              <span class="shell__user-code">{{ username() }}</span>
             </span>
             <app-user-avatar [name]="displayName()" [size]="40" />
             <app-ui-icon
@@ -71,13 +76,19 @@
           @if (userMenuOpen()) {
             <div class="shell__menu-scrim" (click)="closeUserMenu()"></div>
             <div class="shell__menu" role="menu">
-              <div class="shell__menu-header">
+              <a
+                class="shell__menu-header"
+                role="menuitem"
+                routerLink="/perfil"
+                (click)="closeUserMenu()"
+              >
                 <app-user-avatar [name]="displayName()" [size]="36" />
                 <div class="shell__menu-identity">
                   <strong>{{ displayName() }}</strong>
-                  <span>{{ roles().join(' · ') }}</span>
+                  <span>{{ roleLabels().join(' · ') }}</span>
                 </div>
-              </div>
+                <app-ui-icon class="shell__menu-header-caret" name="chevron-right" [size]="16" />
+              </a>
               <button type="button" class="shell__menu-item" role="menuitem" (click)="logout()">
                 <app-ui-icon name="log-out" [size]="18" />
                 <span>Cerrar sesión</span>

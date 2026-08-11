@@ -28,6 +28,9 @@ export class CurrentUserService {
     return `${profile.name} ${profile.lastname}`.trim();
   });
 
+  /** Solo el primer nombre, para saludos: «Jose Carlos Pérez» → «Jose». */
+  readonly firstName = computed(() => this.displayName().trim().split(/\s+/)[0] ?? '');
+
   readonly campusName = computed(() => this.profile()?.campus?.nameCampus ?? null);
 
   reload(): void {

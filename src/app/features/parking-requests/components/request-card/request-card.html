@@ -1,0 +1,60 @@
+<app-ui-card>
+  <header class="request__head">
+    <span class="request__icon">
+      <app-ui-icon name="car" [size]="20" />
+    </span>
+
+    <div class="request__identity">
+      <h3 class="request__plate">{{ request().Vehicle.numberPlate }}</h3>
+      <p class="request__type">{{ request().Vehicle.vehicleType }}</p>
+    </div>
+
+    <app-ui-badge [tone]="statusTone()">{{ request().status }}</app-ui-badge>
+  </header>
+
+  <dl class="request__data">
+    <div class="request__row">
+      <dt>
+        <app-ui-icon name="calendar" [size]="14" />
+        <span>Fecha de solicitud</span>
+      </dt>
+      <dd>
+        @if (dateRequest(); as dateRequest) {
+          {{ dateRequest | date: 'dd MMM yyyy' }}
+        } @else {
+          &mdash;
+        }
+      </dd>
+    </div>
+
+    <div class="request__row">
+      <dt>
+        <app-ui-icon name="clock" [size]="14" />
+        <span>Fecha de respuesta</span>
+      </dt>
+      <dd>
+        @if (dateResponse(); as dateResponse) {
+          {{ dateResponse | date: 'dd MMM yyyy' }}
+        } @else {
+          Pendiente
+        }
+      </dd>
+    </div>
+
+    <div class="request__row">
+      <dt>
+        <app-ui-icon name="history" [size]="14" />
+        <span>Ciclo</span>
+      </dt>
+      <dd>{{ request().Applicant.numberCycle }}</dd>
+    </div>
+
+    <div class="request__row">
+      <dt>
+        <app-ui-icon name="clipboard" [size]="14" />
+        <span>N.° de solicitud</span>
+      </dt>
+      <dd>{{ request().idRequest }}</dd>
+    </div>
+  </dl>
+</app-ui-card>

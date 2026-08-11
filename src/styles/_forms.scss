@@ -23,6 +23,95 @@
   }
 }
 
+.ui-select {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  appearance: none;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--text-base);
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+  }
+
+  &:disabled {
+    color: var(--color-text-disabled);
+    cursor: not-allowed;
+  }
+}
+
+.ui-select ~ .ui-affix {
+  pointer-events: none;
+}
+
+/**
+ * El desplegable de un `select` lo dibuja el sistema operativo, no la página: por eso se ve
+ * "sin CSS" aunque el control cerrado sí esté estilado. `appearance: base-select` mueve el
+ * picker al DOM y lo vuelve estilable sin perder semántica, teclado ni accesibilidad nativas.
+ * Donde no haya soporte, el bloque se ignora y queda el desplegable nativo de siempre.
+ */
+@supports (appearance: base-select) {
+  .ui-select,
+  .ui-select::picker(select) {
+    appearance: base-select;
+  }
+
+  .ui-select {
+    display: flex;
+    align-items: center;
+    text-align: start;
+  }
+
+  /* Ya mostramos un chevron propio con `.ui-affix`. */
+  .ui-select::picker-icon {
+    display: none;
+  }
+
+  .ui-select::picker(select) {
+    padding: var(--space-1);
+    margin-top: var(--space-1);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-surface);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .ui-select option {
+    display: block;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-xs);
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: var(--text-base);
+    cursor: pointer;
+  }
+
+  .ui-select option::checkmark {
+    display: none;
+  }
+
+  .ui-select option:hover {
+    background-color: var(--color-primary-softer);
+  }
+
+  .ui-select option:checked {
+    background-color: var(--color-primary-soft);
+    color: var(--color-primary);
+    font-weight: 700;
+  }
+
+  .ui-select option:disabled {
+    color: var(--color-text-disabled);
+    cursor: not-allowed;
+  }
+}
+
 .ui-field__control:has(.ui-input:-webkit-autofill) {
   background-color: var(--color-autofill);
 }

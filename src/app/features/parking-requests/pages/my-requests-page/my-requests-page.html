@@ -1,0 +1,101 @@
+<header class="page-header">
+  <div>
+    <h1 class="page-header__title">Mis solicitudes</h1>
+    <p class="page-header__subtitle">
+      Consulta el estado de tus solicitudes de ingreso a los estacionamientos de la UTP.
+      @if (currentCycleName(); as cycleName) {
+        <span class="page-header__cycle">Ciclo vigente: {{ cycleName }}</span>
+      }
+    </p>
+  </div>
+
+  <app-ui-button size="lg" routerLink="/solicitudes/nueva">
+    <app-ui-icon name="plus-circle" [size]="18" />
+    Nueva solicitud
+  </app-ui-button>
+</header>
+
+<nav class="views" aria-label="Filtrar solicitudes">
+  @for (option of views; track option.value) {
+    <a
+      class="views__item"
+      [class.views__item--active]="view() === option.value"
+      routerLink="/solicitudes"
+      [queryParams]="option.value === 'todas' ? {} : { vista: option.value }"
+    >
+      {{ option.label }}
+      <span class="views__count">{{ countFor(option.value) }}</span>
+    </a>
+  }
+</nav>
+
+@if (view() === 'historial' && cycles().length) {
+  <div class="filters">
+    <app-ui-form-field label="Filtrar por ciclo" inputId="cycle-filter">
+      <select
+        id="cycle-filter"
+        class="ui-select"
+        [value]="selectedCycle()"
+        (change)="setCycleFilter($event)"
+      >
+        <option [value]="allCycles">Todos los ciclos</option>
+        @for (cycle of cycles(); track cycle) {
+          <option [value]="cycle">{{ cycle }}</option>
+        }
+      </select>
+      <span class="ui-affix">
+        <app-ui-icon name="chevron-down" [size]="18" />
+      </span>
+    </app-ui-form-field>
+  </div>
+}
+
+@if (isLoading()) {
+  <app-ui-card>
+    <p class="state">
+      <span class="state__spinner" aria-hidden="true"></span>
+      <span>Cargando tus solicitudes…</span>
+    </p>
+  </app-ui-card>
+} @else if (hasFailed()) {
+  <app-ui-card>
+    <app-ui-alert tone="danger">
+      No pudimos cargar tus solicitudes. Inténtalo nuevamente en unos minutos.
+    </app-ui-alert>
+    <div class="state__actions">
+      <app-ui-button variant="secondary" (click)="reload()">Reintentar</app-ui-button>
+    </div>
+  </app-ui-card>
+} @else if (visibleRequests().length) {
+  <div class="requests">
+    @for (request of visibleRequests(); track request.idRequest) {
+      <app-request-card [request]="request" />
+    }
+  </div>
+} @else {
+  <app-ui-card>
+    <div class="empty">
+      <span class="empty__icon">
+        <app-ui-icon name="clipboard" [size]="26" />
+      </span>
+
+      @if (filteredOutByCycle()) {
+        <h2 class="empty__title">No hay solicitudes en este ciclo</h2>
+        <p class="empty__description">
+          Elige «Todos los ciclos» para ver el historial completo.
+        </p>
+      } @else if (requests().length) {
+        <h2 class="empty__title">No hay solicitudes en esta vista</h2>
+        <p class="empty__description">
+          Revisa el historial para ver tus solicitudes de ciclos anteriores.
+        </p>
+      } @else {
+        <h2 class="empty__title">Aún no tienes solicitudes</h2>
+        <p class="empty__description">
+          Registra una solicitud para obtener la autorización de ingreso al estacionamiento.
+        </p>
+        <app-ui-button size="lg" routerLink="/solicitudes/nueva">Nueva solicitud</app-ui-button>
+      }
+    </div>
+  </app-ui-card>
+}

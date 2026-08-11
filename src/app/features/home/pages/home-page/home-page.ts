@@ -1,71 +1,48 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { ROLE_SAE } from '../../../../core/auth/auth.constants';
-import { AuthService } from '../../../../core/auth/auth.service';
-import { CurrentUserService } from '../../../../core/portal/current-user.service';
-import { UiAlert } from '../../../../shared/components/ui-alert/ui-alert';
-import { UiBadge } from '../../../../shared/components/ui-badge/ui-badge';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { Params, RouterLink } from '@angular/router';
 import { UiCard } from '../../../../shared/components/ui-card/ui-card';
 import { IconName, UiIcon } from '../../../../shared/components/ui-icon/ui-icon';
-import { UserAvatar } from '../../../../shared/components/user-avatar/user-avatar';
 
-interface UpcomingModule {
+interface HomeAction {
   title: string;
   description: string;
+  cta: string;
   icon: IconName;
+  route: string;
+  queryParams?: Params;
 }
 
 @Component({
   selector: 'app-home-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [UiAlert, UiBadge, UiCard, UiIcon, UserAvatar],
+  imports: [RouterLink, UiCard, UiIcon],
   templateUrl: './home-page.html',
   styleUrl: './home-page.scss',
 })
 export class HomePage {
-  private readonly authService = inject(AuthService);
-  private readonly currentUserService = inject(CurrentUserService);
-
-  protected readonly username = this.authService.username;
-  protected readonly roles = this.authService.roles;
-  protected readonly session = this.authService.session;
-  protected readonly isSae = computed(() => this.authService.hasRole(ROLE_SAE));
-
-  protected readonly profile = this.currentUserService.profile;
-  protected readonly displayName = this.currentUserService.displayName;
-  protected readonly campusName = this.currentUserService.campusName;
-  protected readonly profileLoading = this.currentUserService.isLoading;
-  protected readonly profileFailed = this.currentUserService.hasFailed;
-
-  protected readonly upcomingModules = computed<UpcomingModule[]>(() =>
-    this.isSae()
-      ? [
-          {
-            title: 'Revisión de solicitudes',
-            description: 'Aprueba o rechaza las solicitudes asignadas a tu campus.',
-            icon: 'shield-check',
-          },
-          {
-            title: 'Historial de respuestas',
-            description: 'Consulta las solicitudes que ya has atendido.',
-            icon: 'history',
-          },
-        ]
-      : [
-          {
-            title: 'Mis vehículos',
-            description: 'Registra los vehículos con los que ingresas al campus.',
-            icon: 'car',
-          },
-          {
-            title: 'Solicitudes',
-            description: 'Pide autorización para usar el estacionamiento.',
-            icon: 'clipboard',
-          },
-          {
-            title: 'Historial',
-            description: 'Revisa el estado y la respuesta de tus solicitudes.',
-            icon: 'history',
-          },
-        ],
-  );
+  protected readonly actions: HomeAction[] = [
+    {
+      title: 'Nueva solicitud',
+      description:
+        'Solicita la autorización de ingreso al estacionamiento con uno de tus vehículos.',
+      cta: 'Solicitar autorización',
+      icon: 'car',
+      route: '/solicitudes/nueva',
+    },
+    {
+      title: 'Mis solicitudes',
+      description: 'Revisa el estado de las solicitudes que enviaste durante el ciclo.',
+      cta: 'Ver solicitudes',
+      icon: 'clipboard',
+      route: '/solicitudes',
+    },
+    {
+      title: 'Historial',
+      description: 'Consulta las solicitudes que ya fueron atendidas por el personal SAE.',
+      cta: 'Ver historial',
+      icon: 'history',
+      route: '/solicitudes',
+      queryParams: { vista: 'historial' },
+    },
+  ];
 }
