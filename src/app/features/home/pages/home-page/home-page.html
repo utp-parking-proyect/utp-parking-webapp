@@ -1,106 +1,36 @@
-<header class="page-header">
-  <h1 class="page-header__title">Inicio</h1>
-  <p class="page-header__subtitle">
-    Bienvenido a UTP+ Parking, el portal de acceso a los estacionamientos de la universidad.
-  </p>
-</header>
+<section class="hero">
+  <div class="hero__text">
+    <h1 class="hero__title">Bienvenido a UTP+ Parking</h1>
+    <p class="hero__subtitle">El portal de acceso a los estacionamientos de la universidad.</p>
+  </div>
 
-<div class="home__grid">
-  <app-ui-card>
-    <div class="session__head">
-      <app-user-avatar [name]="displayName()" [size]="56" />
-      <div class="session__identity">
-        <p class="session__greeting">
-          Has iniciado sesión como <strong>{{ displayName() }}</strong>
-        </p>
-        <div class="session__roles">
-          <span class="session__roles-label">Roles:</span>
-          @for (role of roles(); track role) {
-            <app-ui-badge tone="brand">{{ role }}</app-ui-badge>
-          } @empty {
-            <app-ui-badge tone="neutral">Sin roles asignados</app-ui-badge>
-          }
-        </div>
-      </div>
-    </div>
+  <img
+    class="hero__illustration"
+    src="illustrations/parking-welcome.webp"
+    alt=""
+    width="960"
+    height="642"
+  />
+</section>
 
-    <dl class="session__data">
-      <div class="session__row">
-        <dt>Usuario</dt>
-        <dd>{{ username() }}</dd>
-      </div>
-      @if (profile(); as user) {
-        <div class="session__row">
-          <dt>Nombre</dt>
-          <dd>{{ user.name }}</dd>
-        </div>
-        <div class="session__row">
-          <dt>Apellido</dt>
-          <dd>{{ user.lastname }}</dd>
-        </div>
-        <div class="session__row">
-          <dt>Correo institucional</dt>
-          <dd>{{ user.institutionalEmail }}</dd>
-        </div>
-        <div class="session__row">
-          <dt>Carrera</dt>
-          <dd>{{ user.career }}</dd>
-        </div>
-        <div class="session__row">
-          <dt>Campus</dt>
-          <dd>{{ campusName() ?? 'Sin campus asignado' }}</dd>
-        </div>
-      }
-      <div class="session__row">
-        <dt>Identificador</dt>
-        <dd>{{ session()?.userId ?? 'No disponible' }}</dd>
-      </div>
-      <div class="session__row">
-        <dt>Perfil</dt>
-        <dd>{{ isSae() ? 'Personal SAE' : 'Usuario de la comunidad UTP' }}</dd>
-      </div>
-    </dl>
+<section class="actions" aria-labelledby="actions-title">
+  <h2 id="actions-title" class="actions__title">¿Qué deseas hacer?</h2>
 
-    @if (profileLoading()) {
-      <app-ui-alert tone="info">Cargando los datos de tu perfil…</app-ui-alert>
-    } @else if (profileFailed()) {
-      <app-ui-alert tone="danger">
-        No pudimos cargar los datos de tu perfil. Se muestra la información disponible en tu sesión.
-      </app-ui-alert>
-    }
-
-    @if (isSae()) {
-      <app-ui-alert tone="info">
-        Como <strong>Personal SAE</strong>, próximamente podrás revisar y responder las solicitudes
-        de estacionamiento asignadas a tu campus.
-      </app-ui-alert>
-    } @else {
-      <app-ui-alert tone="info">
-        Próximamente podrás registrar tus vehículos y solicitar el acceso al estacionamiento desde
-        esta misma pantalla.
-      </app-ui-alert>
-    }
-  </app-ui-card>
-
-  <section class="home__upcoming" aria-labelledby="upcoming-title">
-    <div class="home__upcoming-head">
-      <h2 id="upcoming-title" class="home__upcoming-title">Módulos en camino</h2>
-      <app-ui-badge tone="warning">
-        <app-ui-icon name="sparkles" [size]="13" />
-        Próximamente
-      </app-ui-badge>
-    </div>
-
-    <div class="home__modules">
-      @for (module of upcomingModules(); track module.title) {
+  <div class="actions__grid">
+    @for (action of actions; track action.title) {
+      <a class="action" [routerLink]="action.route" [queryParams]="action.queryParams">
         <app-ui-card>
-          <span class="module__icon">
-            <app-ui-icon [name]="module.icon" [size]="22" />
+          <span class="action__icon">
+            <app-ui-icon [name]="action.icon" [size]="22" />
           </span>
-          <h3 class="module__title">{{ module.title }}</h3>
-          <p class="module__description">{{ module.description }}</p>
+          <h3 class="action__title">{{ action.title }}</h3>
+          <p class="action__description">{{ action.description }}</p>
+          <span class="action__cta">
+            {{ action.cta }}
+            <app-ui-icon name="arrow-right" [size]="16" />
+          </span>
         </app-ui-card>
-      }
-    </div>
-  </section>
-</div>
+      </a>
+    }
+  </div>
+</section>

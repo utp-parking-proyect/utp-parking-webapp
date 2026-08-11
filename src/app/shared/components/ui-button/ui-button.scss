@@ -19,6 +19,7 @@
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
+  text-decoration: none;
   transition:
     background-color var(--transition-fast),
     border-color var(--transition-fast),
@@ -28,6 +29,10 @@
   &:focus-visible {
     outline: none;
     box-shadow: var(--shadow-focus);
+  }
+
+  &:hover {
+    text-decoration: none;
   }
 
   &:disabled {
