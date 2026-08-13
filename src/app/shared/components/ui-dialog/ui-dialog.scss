@@ -1,0 +1,111 @@
+@use 'styles/mixins' as m;
+@use 'styles/breakpoints' as bp;
+
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dropdown);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+
+  @include bp.respond-down(bp.$breakpoint-mobile) {
+    align-items: flex-end;
+    padding: 0;
+  }
+}
+
+.ui-dialog__scrim {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(22, 22, 43, 0.45);
+}
+
+.ui-dialog__panel {
+  @include m.surface-card;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: min(30rem, 100%);
+  max-height: calc(100dvh - var(--space-8));
+  padding: var(--space-6);
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  border-top: 4px solid var(--color-primary);
+
+  @include bp.respond-down(bp.$breakpoint-mobile) {
+    width: 100%;
+    max-height: 90dvh;
+    padding: var(--space-5) var(--space-4) var(--space-6);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+}
+
+.ui-dialog__panel--danger {
+  border-top-color: var(--color-danger);
+}
+
+.ui-dialog__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.ui-dialog__title {
+  font-size: var(--text-lg);
+}
+
+.ui-dialog__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast);
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-surface-sunken);
+    color: var(--color-text);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.ui-dialog__description {
+  margin-top: calc(var(--space-3) * -1);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+.ui-dialog__body:empty {
+  display: none;
+}
+
+.ui-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+
+  @include bp.respond-down(bp.$breakpoint-mobile) {
+    flex-direction: column-reverse;
+  }
+}

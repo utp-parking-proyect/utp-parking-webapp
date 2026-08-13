@@ -17,12 +17,6 @@ export class CurrentCycleService {
 
   readonly isLoading = this.resource.isLoading;
   readonly hasFailed = computed(() => this.resource.error() !== undefined);
-
-  /**
-   * El portal es la única fuente de verdad del ciclo vigente: no lo calculamos ni lo cacheamos.
-   * Es `null` mientras carga y también si el endpoint falla, para que quien filtre pueda decidir
-   * mostrar todo en lugar de una lista vacía.
-   */
   readonly name = computed(() => this.resource.value()?.nameCycle?.trim() || null);
 
   reload(): void {

@@ -11,10 +11,11 @@
     </button>
 
     <nav class="shell__nav" aria-label="Navegación principal">
-      @for (item of navItems; track item.route) {
+      @for (item of navItems(); track item.label) {
         <a
           class="shell__nav-item"
           [routerLink]="item.route"
+          [queryParams]="item.queryParams"
           routerLinkActive="shell__nav-item--active"
           [routerLinkActiveOptions]="{ exact: !!item.exact }"
           (click)="closeSidebar()"

@@ -1,15 +1,15 @@
 <app-ui-card>
   <header class="request__head">
     <span class="request__icon">
-      <app-ui-icon name="car" [size]="20" />
+      <app-ui-icon [name]="vehicleIcon()" [size]="20" />
     </span>
 
     <div class="request__identity">
-      <h3 class="request__plate">{{ request().Vehicle.numberPlate }}</h3>
-      <p class="request__type">{{ request().Vehicle.vehicleType }}</p>
+      <h3 class="request__plate">{{ request().vehicle.numberPlate }}</h3>
+      <p class="request__type">{{ request().vehicle.vehicleType }}</p>
     </div>
 
-    <app-ui-badge [tone]="statusTone()">{{ request().status }}</app-ui-badge>
+    <app-ui-badge [tone]="statusTone()">{{ request().status | statusLabel }}</app-ui-badge>
   </header>
 
   <dl class="request__data">
@@ -46,7 +46,7 @@
         <app-ui-icon name="history" [size]="14" />
         <span>Ciclo</span>
       </dt>
-      <dd>{{ request().Applicant.numberCycle }}</dd>
+      <dd>{{ request().applicant.numberCycle }}</dd>
     </div>
 
     <div class="request__row">
@@ -57,4 +57,33 @@
       <dd>{{ request().idRequest }}</dd>
     </div>
   </dl>
+
+  @if (showResubmit()) {
+    <section class="rejection" aria-labelledby="rejection-title-{{ request().idRequest }}">
+      <h4 class="rejection__title" id="rejection-title-{{ request().idRequest }}">
+        <app-ui-icon name="alert-triangle" [size]="16" />
+        <span>Solicitud rechazada</span>
+      </h4>
+      <p class="rejection__description">
+        Consulta el motivo en el detalle. Puedes corregir los datos y reenviarla para una nueva
+        revisión del personal SAE.
+      </p>
+
+      <app-ui-button
+        [block]="true"
+        [loading]="resubmitting()"
+        [disabled]="resubmitting()"
+        (click)="resubmit.emit(request())"
+      >
+        {{ resubmitting() ? 'Reenviando…' : 'Reenviar solicitud' }}
+      </app-ui-button>
+    </section>
+  }
+
+  @if (actionable()) {
+    <a class="request__detail-link" [routerLink]="['/solicitudes', request().idRequest]">
+      <span>Ver detalle</span>
+      <app-ui-icon name="chevron-right" [size]="16" />
+    </a>
+  }
 </app-ui-card>

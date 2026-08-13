@@ -33,6 +33,12 @@
   }
 }
 
+.ui-field__control:has(textarea) {
+  height: auto;
+  align-items: stretch;
+  padding-block: var(--space-2);
+}
+
 .ui-field__control--invalid {
   border-color: var(--color-danger);
 

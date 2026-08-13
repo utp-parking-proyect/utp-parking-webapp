@@ -1,0 +1,267 @@
+<a class="page-back" routerLink="/revisiones">
+  <app-ui-icon name="arrow-left" [size]="16" />
+  <span>Volver a solicitudes pendientes</span>
+</a>
+
+@if (isLoading()) {
+  <app-ui-card>
+    <p class="state">
+      <span class="state__spinner" aria-hidden="true"></span>
+      <span>Cargando la solicitud…</span>
+    </p>
+  </app-ui-card>
+} @else if (hasFailed()) {
+  <app-ui-card>
+    <app-ui-alert tone="danger">
+      No fue posible cargar la solicitud. Inténtalo nuevamente en unos minutos.
+    </app-ui-alert>
+  </app-ui-card>
+} @else if (request(); as request) {
+  <header class="page-header">
+    <div>
+      <h1 class="page-header__title">Solicitud #{{ request.idRequest }}</h1>
+      <p class="page-header__subtitle">
+        Revisa la información del solicitante y su vehículo antes de responder.
+      </p>
+    </div>
+    <app-ui-badge [tone]="statusTone()">{{ request.status | statusLabel }}</app-ui-badge>
+  </header>
+
+  @if (errorMessage(); as message) {
+    <div class="detail__feedback">
+      <app-ui-alert tone="danger">{{ message }}</app-ui-alert>
+    </div>
+  }
+
+  @if (applicantNote(); as note) {
+    <section class="applicant-note" aria-labelledby="applicant-note-title">
+      <h2 class="applicant-note__title" id="applicant-note-title">
+        <app-ui-icon name="message-square" [size]="18" />
+        <span>Comentario del solicitante al reenviar</span>
+      </h2>
+
+      <blockquote class="applicant-note__comment">{{ note.observation }}</blockquote>
+
+      <p class="applicant-note__meta">
+        <app-ui-icon name="clock" [size]="14" />
+        <span>
+          {{ note.status | statusLabel }}
+          @if (entryDate(note); as changedAt) {
+            · {{ changedAt | date: 'dd MMM yyyy, HH:mm' }}
+          }
+        </span>
+      </p>
+    </section>
+  }
+
+  <div class="detail">
+    <app-ui-card class="detail__panel">
+      <h2 class="detail__title">
+        <app-ui-icon name="user" [size]="18" />
+        <span>Solicitante</span>
+      </h2>
+
+      <div class="detail__identity">
+        <app-user-avatar
+          [name]="request.applicant.nameApplicant + ' ' + request.applicant.lastNameApplicant"
+          [size]="48"
+        />
+        <div>
+          <strong class="detail__name">
+            {{ request.applicant.nameApplicant }} {{ request.applicant.lastNameApplicant }}
+          </strong>
+          <span class="detail__muted">{{ request.applicant.usernameApplicant }}</span>
+        </div>
+      </div>
+
+      <dl class="detail__data">
+        @if (applicantProfile(); as profile) {
+          <div class="detail__row">
+            <dt>DNI</dt>
+            <dd>{{ profile.dni || '—' }}</dd>
+          </div>
+          <div class="detail__row">
+            <dt>Correo institucional</dt>
+            <dd>{{ profile.institutionalEmail || '—' }}</dd>
+          </div>
+          <div class="detail__row">
+            <dt>Carrera</dt>
+            <dd>{{ profile.career || '—' }}</dd>
+          </div>
+          <div class="detail__row">
+            <dt>Campus</dt>
+            <dd>{{ profile.campus?.nameCampus ?? 'Sin campus asignado' }}</dd>
+          </div>
+        } @else if (applicantFailed()) {
+          <p class="detail__muted">No fue posible cargar los datos adicionales del solicitante.</p>
+        } @else {
+          <p class="detail__muted">Cargando los datos del solicitante…</p>
+        }
+      </dl>
+    </app-ui-card>
+
+    <app-ui-card class="detail__panel">
+      <h2 class="detail__title">
+        <app-ui-icon [name]="vehicleIcon()" [size]="18" />
+        <span>Vehículo</span>
+      </h2>
+
+      <dl class="detail__data">
+        <div class="detail__row">
+          <dt>Placa</dt>
+          <dd class="detail__plate">{{ request.vehicle.numberPlate }}</dd>
+        </div>
+        <div class="detail__row">
+          <dt>Tipo</dt>
+          <dd>{{ request.vehicle.vehicleType || '—' }}</dd>
+        </div>
+      </dl>
+    </app-ui-card>
+
+    <app-ui-card class="detail__panel detail__panel--wide">
+      <h2 class="detail__title">
+        <app-ui-icon name="clipboard" [size]="18" />
+        <span>Solicitud</span>
+      </h2>
+
+      <dl class="detail__data detail__data--grid">
+        <div class="detail__row">
+          <dt>N.° de solicitud</dt>
+          <dd>#{{ request.idRequest }}</dd>
+        </div>
+        <div class="detail__row">
+          <dt>Ciclo</dt>
+          <dd>{{ request.applicant.numberCycle || '—' }}</dd>
+        </div>
+        <div class="detail__row">
+          <dt>Fecha de solicitud</dt>
+          <dd>
+            @if (dateRequest(); as dateRequest) {
+              {{ dateRequest | date: 'dd MMM yyyy, HH:mm' }}
+            } @else {
+              &mdash;
+            }
+          </dd>
+        </div>
+        <div class="detail__row">
+          <dt>Fecha de respuesta</dt>
+          <dd>
+            @if (dateResponse(); as dateResponse) {
+              {{ dateResponse | date: 'dd MMM yyyy, HH:mm' }}
+            } @else {
+              Pendiente
+            }
+          </dd>
+        </div>
+        <div class="detail__row">
+          <dt>Estado</dt>
+          <dd>
+            <app-ui-badge [tone]="statusTone()">{{ request.status | statusLabel }}</app-ui-badge>
+          </dd>
+        </div>
+      </dl>
+    </app-ui-card>
+
+    @if (request.workflow.length) {
+      <app-ui-card class="detail__panel detail__panel--wide">
+        <app-request-timeline [entries]="request.workflow" />
+      </app-ui-card>
+    }
+  </div>
+
+  @if (canRespond()) {
+    <div class="actions">
+      <app-ui-button size="lg" [disabled]="submitting()" (click)="openAccept()">
+        <app-ui-icon name="check-circle" [size]="18" />
+        Aceptar solicitud
+      </app-ui-button>
+      <app-ui-button variant="danger" size="lg" [disabled]="submitting()" (click)="openReject()">
+        <app-ui-icon name="x" [size]="18" />
+        Rechazar solicitud
+      </app-ui-button>
+    </div>
+  } @else {
+    <app-ui-alert tone="info">
+      Esta solicitud ya fue respondida y no admite cambios.
+    </app-ui-alert>
+  }
+
+  @if (action() === 'approve') {
+    <app-ui-dialog
+      title="¿Confirmar aceptación?"
+      description="Esta acción aprobará la solicitud de estacionamiento."
+      [busy]="submitting()"
+      (closed)="closeDialog()"
+    >
+      <dl class="dialog__summary">
+        <div>
+          <dt>Solicitud</dt>
+          <dd>#{{ request.idRequest }}</dd>
+        </div>
+        <div>
+          <dt>Vehículo</dt>
+          <dd>{{ request.vehicle.numberPlate }}</dd>
+        </div>
+      </dl>
+
+      <div dialogActions class="dialog__buttons">
+        <app-ui-button variant="secondary" [disabled]="submitting()" (click)="closeDialog()">
+          Cancelar
+        </app-ui-button>
+        <app-ui-button [loading]="submitting()" (click)="confirmAccept()">
+          Aceptar solicitud
+        </app-ui-button>
+      </div>
+    </app-ui-dialog>
+  }
+
+  @if (action() === 'reject') {
+    <app-ui-dialog
+      title="Rechazar solicitud"
+      description="Indica el motivo de la decisión. El solicitante verá este comentario."
+      tone="danger"
+      [busy]="submitting()"
+      (closed)="closeDialog()"
+    >
+      <form [formGroup]="rejectionForm" (ngSubmit)="confirmReject()" novalidate>
+        <app-ui-form-field
+          label="Comentario"
+          inputId="rejection-comment"
+          hint="Obligatorio al rechazar. Máximo 500 caracteres."
+          [error]="commentError()"
+        >
+          <textarea
+            id="rejection-comment"
+            class="ui-input"
+            rows="4"
+            maxlength="500"
+            placeholder="Comentario…"
+            formControlName="comment"
+          ></textarea>
+        </app-ui-form-field>
+      </form>
+
+      <div dialogActions class="dialog__buttons">
+        <app-ui-button variant="secondary" [disabled]="submitting()" (click)="closeDialog()">
+          Cancelar
+        </app-ui-button>
+        <app-ui-button variant="danger" [loading]="submitting()" (click)="confirmReject()">
+          Rechazar solicitud
+        </app-ui-button>
+      </div>
+    </app-ui-dialog>
+  }
+} @else {
+  <app-ui-card>
+    <div class="empty">
+      <span class="empty__icon">
+        <app-ui-icon name="inbox" [size]="26" />
+      </span>
+      <h2 class="empty__title">No encontramos esta solicitud</h2>
+      <p class="empty__description">
+        Puede que ya haya sido respondida o que no esté asignada a tu revisión.
+      </p>
+      <app-ui-button size="lg" routerLink="/revisiones">Ver solicitudes pendientes</app-ui-button>
+    </div>
+  </app-ui-card>
+}

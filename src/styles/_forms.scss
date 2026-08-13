@@ -23,6 +23,12 @@
   }
 }
 
+textarea.ui-input {
+  height: auto;
+  resize: vertical;
+  line-height: var(--leading-normal);
+}
+
 .ui-select {
   flex: 1 1 auto;
   min-width: 0;
@@ -50,12 +56,6 @@
   pointer-events: none;
 }
 
-/**
- * El desplegable de un `select` lo dibuja el sistema operativo, no la página: por eso se ve
- * "sin CSS" aunque el control cerrado sí esté estilado. `appearance: base-select` mueve el
- * picker al DOM y lo vuelve estilable sin perder semántica, teclado ni accesibilidad nativas.
- * Donde no haya soporte, el bloque se ignora y queda el desplegable nativo de siempre.
- */
 @supports (appearance: base-select) {
   .ui-select,
   .ui-select::picker(select) {
@@ -68,7 +68,6 @@
     text-align: start;
   }
 
-  /* Ya mostramos un chevron propio con `.ui-affix`. */
   .ui-select::picker-icon {
     display: none;
   }

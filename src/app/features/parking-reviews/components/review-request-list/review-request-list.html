@@ -1,0 +1,57 @@
+<table class="reviews-table">
+  <caption class="sr-only">Solicitudes de estacionamiento asignadas para revisión</caption>
+  <thead>
+    <tr>
+      <th scope="col">N.° solicitud</th>
+      <th scope="col">Vehículo</th>
+      <th scope="col">Solicitante</th>
+      <th scope="col">Ciclo</th>
+      <th scope="col">Fecha</th>
+      <th scope="col">Estado</th>
+      <th scope="col"><span class="sr-only">Acciones</span></th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (request of requests(); track request.idRequest) {
+      <tr>
+        <td data-label="N.° solicitud">
+          <span class="reviews-table__id">#{{ request.idRequest }}</span>
+        </td>
+
+        <td data-label="Vehículo">
+          <span class="reviews-table__plate">
+            <app-ui-icon [name]="vehicleIcon(request)" [size]="16" />
+            <strong>{{ request.vehicle.numberPlate }}</strong>
+          </span>
+          <span class="reviews-table__muted">{{ request.vehicle.vehicleType }}</span>
+        </td>
+
+        <td data-label="Solicitante">
+          <span class="reviews-table__applicant">{{ applicantName(request) }}</span>
+          <span class="reviews-table__muted">{{ request.applicant.usernameApplicant }}</span>
+        </td>
+
+        <td data-label="Ciclo">{{ request.applicant.numberCycle || '—' }}</td>
+
+        <td data-label="Fecha">
+          @if (toDate(request.dateRequest); as dateRequest) {
+            {{ dateRequest | date: 'dd/MM/yyyy' }}
+          } @else {
+            &mdash;
+          }
+        </td>
+
+        <td data-label="Estado">
+          <app-ui-badge [tone]="statusTone(request)">{{ request.status | statusLabel }}</app-ui-badge>
+        </td>
+
+        <td class="reviews-table__action">
+          <a class="reviews-table__link" [routerLink]="['/revisiones', request.idRequest]">
+            <span>Revisar</span>
+            <app-ui-icon name="chevron-right" [size]="16" />
+          </a>
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>

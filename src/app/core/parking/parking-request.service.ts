@@ -1,14 +1,15 @@
 import { HttpClient, httpResource } from '@angular/common/http';
 import { Injectable, computed, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AuthService } from '../auth/auth.service';
 import { CurrentUserService } from '../portal/current-user.service';
+import { ParkingRequestDetailService } from './parking-request-detail.service';
 import {
   ParkingRequestIn,
   ParkingRequestInformation,
   ParkingRequestInformationList,
   ParkingRequestOut,
+  ParkingRequestResubmitIn,
 } from './models/parking-request.model';
 import { ApplicantVehicle } from './models/vehicle.model';
 import { PARKING_REQUEST_PATH } from './parking.constants';
@@ -23,12 +24,10 @@ function byNewestFirst(a: ParkingRequestInformation, b: ParkingRequestInformatio
 @Injectable({ providedIn: 'root' })
 export class ParkingRequestService {
   private readonly http = inject(HttpClient);
-  private readonly authService = inject(AuthService);
   private readonly currentUserService = inject(CurrentUserService);
+  private readonly detailService = inject(ParkingRequestDetailService);
 
-  private readonly applicantId = computed(
-    () => this.authService.session()?.userId ?? this.currentUserService.profile()?.idUser ?? null,
-  );
+  private readonly applicantId = this.currentUserService.userId;
 
   private readonly resource = httpResource<ParkingRequestInformationList>(() => {
     const applicantId = this.applicantId();
@@ -47,11 +46,10 @@ export class ParkingRequestService {
       : this.resource.error() !== undefined,
   );
 
-  /** Los vehículos del usuario solo existen a través de sus solicitudes: no hay endpoint propio. */
   readonly vehicles = computed<ApplicantVehicle[]>(() => {
     const seen = new Map<string, ApplicantVehicle>();
     for (const request of this.requests()) {
-      const { numberPlate, vehicleType } = request.Vehicle;
+      const { numberPlate, vehicleType } = request.vehicle;
       if (numberPlate && !seen.has(numberPlate)) {
         seen.set(numberPlate, { numberPlate, vehicleType });
       }
@@ -61,6 +59,20 @@ export class ParkingRequestService {
 
   create(request: ParkingRequestIn): Observable<ParkingRequestOut> {
     return this.http.post<ParkingRequestOut>(REQUESTS_URL, request);
+  }
+
+  resubmit(
+    requestId: number,
+    resubmission?: ParkingRequestResubmitIn,
+  ): Observable<ParkingRequestOut> {
+    return this.http
+      .post<ParkingRequestOut>(`${REQUESTS_URL}/${requestId}/resubmit`, resubmission ?? null)
+      .pipe(
+        tap(() => {
+          this.resource.reload();
+          this.detailService.reload();
+        }),
+      );
   }
 
   reload(): void {
