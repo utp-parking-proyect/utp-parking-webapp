@@ -1,0 +1,79 @@
+<header class="page-header">
+  <div>
+    <h1 class="page-header__title">Solicitudes pendientes</h1>
+    <p class="page-header__subtitle">
+      Solicitudes de ingreso al estacionamiento asignadas para tu revisión.
+      @if (currentCycleName(); as cycleName) {
+        <span class="page-header__cycle">Ciclo vigente: {{ cycleName }}</span>
+      }
+    </p>
+  </div>
+
+  <app-ui-button variant="secondary" size="lg" [disabled]="isLoading()" (click)="reload()">
+    <app-ui-icon name="refresh" [size]="18" />
+    Actualizar
+  </app-ui-button>
+</header>
+
+@if (feedback(); as message) {
+  <div class="feedback">
+    <app-ui-alert tone="success">{{ message }}</app-ui-alert>
+  </div>
+}
+
+<nav class="views" aria-label="Filtrar solicitudes asignadas">
+  @for (option of views; track option.value) {
+    <a
+      class="views__item"
+      [class.views__item--active]="view() === option.value"
+      routerLink="/revisiones"
+      [queryParams]="option.value === 'pendientes' ? {} : { vista: option.value }"
+    >
+      {{ option.label }}
+      <span class="views__count">{{ countFor(option.value) }}</span>
+    </a>
+  }
+</nav>
+
+@if (isLoading()) {
+  <app-ui-card>
+    <p class="state">
+      <span class="state__spinner" aria-hidden="true"></span>
+      <span>Cargando las solicitudes asignadas…</span>
+    </p>
+  </app-ui-card>
+} @else if (hasFailed()) {
+  <app-ui-card>
+    <app-ui-alert tone="danger">
+      No fue posible cargar las solicitudes. Inténtalo nuevamente en unos minutos.
+    </app-ui-alert>
+    <div class="state__actions">
+      <app-ui-button variant="secondary" (click)="reload()">Reintentar</app-ui-button>
+    </div>
+  </app-ui-card>
+} @else if (visibleRequests().length) {
+  <app-ui-card [padded]="false">
+    <app-review-request-list [requests]="visibleRequests()" />
+  </app-ui-card>
+} @else {
+  <app-ui-card>
+    <div class="empty">
+      <span class="empty__icon">
+        <app-ui-icon [name]="view() === 'revisadas' ? 'history' : 'inbox'" [size]="26" />
+      </span>
+
+      @if (view() === 'revisadas') {
+        <h2 class="empty__title">Todavía no has revisado solicitudes</h2>
+        <p class="empty__description">
+          Aquí verás las solicitudes que apruebes o rechaces.
+        </p>
+        <app-ui-button size="lg" routerLink="/revisiones">Ver pendientes</app-ui-button>
+      } @else {
+        <h2 class="empty__title">No tienes solicitudes pendientes</h2>
+        <p class="empty__description">
+          Las nuevas solicitudes asignadas para revisión aparecerán aquí.
+        </p>
+      }
+    </div>
+  </app-ui-card>
+}

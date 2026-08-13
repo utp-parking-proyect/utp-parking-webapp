@@ -132,33 +132,6 @@
 
         <form class="form" [formGroup]="newVehicleForm" (ngSubmit)="submit()" novalidate>
           <app-ui-form-field
-            label="Placa"
-            inputId="number-plate"
-            hint="Ejemplo: ABC-123"
-            [error]="
-              errorFor(
-                newVehicleForm.controls.numberPlate,
-                'Ingresa una placa válida, como ABC-123.'
-              )
-            "
-          >
-            <input
-              id="number-plate"
-              class="ui-input"
-              type="text"
-              inputmode="text"
-              maxlength="8"
-              autocomplete="off"
-              placeholder="ABC-123"
-              formControlName="numberPlate"
-              (input)="normalizePlate($event)"
-            />
-            <span class="ui-affix">
-              <app-ui-icon name="car" [size]="18" />
-            </span>
-          </app-ui-form-field>
-
-          <app-ui-form-field
             label="Tipo de vehículo"
             inputId="vehicle-type"
             [error]="
@@ -173,6 +146,28 @@
             </select>
             <span class="ui-affix">
               <app-ui-icon name="chevron-down" [size]="18" />
+            </span>
+          </app-ui-form-field>
+
+          <app-ui-form-field
+            label="Placa"
+            inputId="number-plate"
+            [hint]="'Ejemplo: ' + plateExample()"
+            [error]="plateError()"
+          >
+            <input
+              id="number-plate"
+              class="ui-input"
+              type="text"
+              inputmode="text"
+              [attr.maxlength]="plateMaxLength"
+              autocomplete="off"
+              [placeholder]="plateExample()"
+              formControlName="numberPlate"
+              (input)="normalizePlate($event)"
+            />
+            <span class="ui-affix">
+              <app-ui-icon [name]="vehicleIcon()" [size]="18" />
             </span>
           </app-ui-form-field>
 

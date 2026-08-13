@@ -7,6 +7,10 @@ export interface ParkingRequestOut {
   parkingRequestId: number;
 }
 
+export interface ParkingRequestResubmitIn {
+  observation?: string;
+}
+
 export interface VehicleInformation {
   vehicleType: string;
   numberPlate: string;
@@ -22,8 +26,8 @@ export interface ApplicantInformation {
 
 export interface ParkingRequestInformation {
   idRequest: number;
-  Applicant: ApplicantInformation;
-  Vehicle: VehicleInformation;
+  applicant: ApplicantInformation;
+  vehicle: VehicleInformation;
   dateRequest: string;
   dateResponse: string | null;
   status: string;
@@ -31,4 +35,25 @@ export interface ParkingRequestInformation {
 
 export interface ParkingRequestInformationList {
   parkingRequests: ParkingRequestInformation[];
+}
+
+export interface WorkflowEntry {
+  status: string;
+  dateStatusChange: string;
+  observation: string | null;
+}
+
+export interface ParkingRequestDetail extends ParkingRequestInformation {
+  workflow: WorkflowEntry[];
+}
+
+export interface ParkingResponseIn {
+  approved: boolean;
+  comment?: string;
+}
+
+export interface ParkingResponseOut {
+  approved: boolean;
+  comment: string;
+  statusId: number;
 }

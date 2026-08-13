@@ -15,6 +15,18 @@
   </app-ui-button>
 </header>
 
+@if (successMessage(); as message) {
+  <div class="feedback">
+    <app-ui-alert tone="success">{{ message }}</app-ui-alert>
+  </div>
+}
+
+@if (errorMessage(); as message) {
+  <div class="feedback">
+    <app-ui-alert tone="danger">{{ message }}</app-ui-alert>
+  </div>
+}
+
 <nav class="views" aria-label="Filtrar solicitudes">
   @for (option of views; track option.value) {
     <a
@@ -29,18 +41,36 @@
   }
 </nav>
 
-@if (view() === 'historial' && cycles().length) {
+@if (view() === 'historial') {
   <div class="filters">
-    <app-ui-form-field label="Filtrar por ciclo" inputId="cycle-filter">
+    @if (cycles().length) {
+      <app-ui-form-field label="Filtrar por ciclo" inputId="cycle-filter">
+        <select
+          id="cycle-filter"
+          class="ui-select"
+          [value]="selectedCycle()"
+          (change)="setCycleFilter($event)"
+        >
+          <option [value]="allCycles">Todos los ciclos</option>
+          @for (cycle of cycles(); track cycle) {
+            <option [value]="cycle">{{ cycle }}</option>
+          }
+        </select>
+        <span class="ui-affix">
+          <app-ui-icon name="chevron-down" [size]="18" />
+        </span>
+      </app-ui-form-field>
+    }
+
+    <app-ui-form-field label="Ordenar por fecha" inputId="date-order">
       <select
-        id="cycle-filter"
+        id="date-order"
         class="ui-select"
-        [value]="selectedCycle()"
-        (change)="setCycleFilter($event)"
+        [value]="dateOrder()"
+        (change)="setDateOrder($event)"
       >
-        <option [value]="allCycles">Todos los ciclos</option>
-        @for (cycle of cycles(); track cycle) {
-          <option [value]="cycle">{{ cycle }}</option>
+        @for (option of dateOrders; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
         }
       </select>
       <span class="ui-affix">
@@ -69,7 +99,12 @@
 } @else if (visibleRequests().length) {
   <div class="requests">
     @for (request of visibleRequests(); track request.idRequest) {
-      <app-request-card [request]="request" />
+      <app-request-card
+        [request]="request"
+        [actionable]="true"
+        [resubmitting]="resubmittingId() === request.idRequest"
+        (resubmit)="askResubmit($event)"
+      />
     }
   </div>
 } @else {
@@ -98,4 +133,45 @@
       }
     </div>
   </app-ui-card>
+}
+
+@if (resubmitTarget(); as request) {
+  <app-ui-dialog
+    title="¿Deseas reenviar esta solicitud?"
+    description="Tu solicitud volverá al proceso de revisión del personal SAE."
+    (closed)="cancelResubmit()"
+  >
+    <dl class="dialog__summary">
+      <div>
+        <dt>Solicitud</dt>
+        <dd>#{{ request.idRequest }}</dd>
+      </div>
+      <div>
+        <dt>Vehículo</dt>
+        <dd>{{ request.vehicle.numberPlate }}</dd>
+      </div>
+    </dl>
+
+    <form [formGroup]="resubmitForm" (ngSubmit)="confirmResubmit()" novalidate>
+      <app-ui-form-field
+        label="Observación (opcional)"
+        inputId="resubmit-observation"
+        hint="Cuéntale al personal SAE qué corregiste. Máximo 500 caracteres."
+      >
+        <textarea
+          id="resubmit-observation"
+          class="ui-input"
+          rows="3"
+          maxlength="500"
+          placeholder="Documentación corregida…"
+          formControlName="observation"
+        ></textarea>
+      </app-ui-form-field>
+    </form>
+
+    <div dialogActions class="dialog__buttons">
+      <app-ui-button variant="secondary" (click)="cancelResubmit()">Cancelar</app-ui-button>
+      <app-ui-button (click)="confirmResubmit()">Reenviar</app-ui-button>
+    </div>
+  </app-ui-dialog>
 }

@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
+import { APPLICANT_ROLES, ROLE_SAE } from './core/auth/auth.constants';
 import { authGuard } from './core/guards/auth.guard';
 import { guestGuard } from './core/guards/guest.guard';
+import { roleGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
   {
@@ -27,6 +29,7 @@ export const routes: Routes = [
       },
       {
         path: 'solicitudes',
+        canActivate: [roleGuard(APPLICANT_ROLES)],
         loadComponent: () =>
           import('./features/parking-requests/pages/my-requests-page/my-requests-page').then(
             (m) => m.MyRequestsPage,
@@ -39,9 +42,34 @@ export const routes: Routes = [
       },
       {
         path: 'solicitudes/nueva',
+        canActivate: [roleGuard(APPLICANT_ROLES)],
         loadComponent: () =>
           import('./features/parking-requests/pages/new-request-page/new-request-page').then(
             (m) => m.NewRequestPage,
+          ),
+      },
+      {
+        path: 'solicitudes/:requestId',
+        canActivate: [roleGuard(APPLICANT_ROLES)],
+        loadComponent: () =>
+          import('./features/parking-requests/pages/request-detail-page/request-detail-page').then(
+            (m) => m.RequestDetailPage,
+          ),
+      },
+      {
+        path: 'revisiones',
+        canActivate: [roleGuard([ROLE_SAE])],
+        loadComponent: () =>
+          import('./features/parking-reviews/pages/pending-reviews-page/pending-reviews-page').then(
+            (m) => m.PendingReviewsPage,
+          ),
+      },
+      {
+        path: 'revisiones/:requestId',
+        canActivate: [roleGuard([ROLE_SAE])],
+        loadComponent: () =>
+          import('./features/parking-reviews/pages/review-detail-page/review-detail-page').then(
+            (m) => m.ReviewDetailPage,
           ),
       },
       {

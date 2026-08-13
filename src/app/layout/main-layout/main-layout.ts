@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Params, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
+import { injectRoleAccess } from '../../core/auth/role-access';
 import { roleLabel } from '../../core/auth/role-labels';
 import { CurrentUserService } from '../../core/portal/current-user.service';
 import { BrandLogo } from '../../shared/components/brand-logo/brand-logo';
@@ -12,7 +13,33 @@ interface NavItem {
   icon: IconName;
   route: string;
   exact?: boolean;
+  queryParams?: Params;
 }
+
+const HOME_ITEM: NavItem = { label: 'Inicio', icon: 'home', route: '/home' };
+
+const APPLICANT_ITEMS: NavItem[] = [
+  { label: 'Nueva solicitud', icon: 'car', route: '/solicitudes/nueva' },
+  { label: 'Mis solicitudes', icon: 'clipboard', route: '/solicitudes', exact: true },
+  {
+    label: 'Historial',
+    icon: 'history',
+    route: '/solicitudes',
+    exact: true,
+    queryParams: { vista: 'historial' },
+  },
+];
+
+const SAE_ITEMS: NavItem[] = [
+  { label: 'Solicitudes pendientes', icon: 'inbox', route: '/revisiones', exact: true },
+  {
+    label: 'Revisadas',
+    icon: 'history',
+    route: '/revisiones',
+    exact: true,
+    queryParams: { vista: 'revisadas' },
+  },
+];
 
 @Component({
   selector: 'app-main-layout',
@@ -25,23 +52,23 @@ export class MainLayout {
   private readonly authService = inject(AuthService);
   private readonly currentUserService = inject(CurrentUserService);
   private readonly router = inject(Router);
+  private readonly access = injectRoleAccess();
 
   protected readonly username = this.authService.username;
   protected readonly roles = this.authService.roles;
   protected readonly displayName = this.currentUserService.displayName;
   protected readonly firstName = this.currentUserService.firstName;
   protected readonly roleLabels = computed(() => this.roles().map(roleLabel));
-  /** El topbar muestra un solo rol, como el portal UTP; el desplegable los lista todos. */
   protected readonly primaryRoleLabel = computed(() => this.roleLabels()[0] ?? null);
 
   protected readonly sidebarExpanded = signal(false);
   protected readonly userMenuOpen = signal(false);
 
-  protected readonly navItems: NavItem[] = [
-    { label: 'Inicio', icon: 'home', route: '/home' },
-    { label: 'Nueva solicitud', icon: 'car', route: '/solicitudes/nueva' },
-    { label: 'Mis solicitudes', icon: 'clipboard', route: '/solicitudes', exact: true },
-  ];
+  protected readonly navItems = computed<NavItem[]>(() => [
+    HOME_ITEM,
+    ...(this.access.isApplicant() ? APPLICANT_ITEMS : []),
+    ...(this.access.isSae() ? SAE_ITEMS : []),
+  ]);
 
   toggleSidebar(): void {
     this.sidebarExpanded.update((expanded) => !expanded);

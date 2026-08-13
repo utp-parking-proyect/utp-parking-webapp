@@ -99,6 +99,24 @@
   }
 }
 
+.ui-button--danger {
+  background-color: var(--color-danger);
+  color: var(--color-text-inverse);
+
+  &:hover:not(:disabled) {
+    filter: brightness(0.94);
+  }
+
+  &:focus-visible {
+    box-shadow: var(--shadow-focus-danger);
+  }
+
+  &:disabled {
+    background-color: var(--color-surface-sunken);
+    color: var(--color-text-disabled);
+  }
+}
+
 .ui-button__spinner {
   width: 1rem;
   height: 1rem;

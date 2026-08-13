@@ -7,13 +7,27 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import {
+  FormBuilder,
+  FormControl,
+  ReactiveFormsModule,
+  ValidatorFn,
+  Validators,
+} from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { apiErrorMessage } from '../../../../core/parking/api-error.util';
 import { ParkingRequestIn } from '../../../../core/parking/models/parking-request.model';
+import {
+  PLATE_MAX_LENGTH,
+  formatPlate,
+  isValidPlate,
+  plateErrorFor,
+  plateExampleFor,
+} from '../../../../core/parking/number-plate.util';
 import { ParkingRequestService } from '../../../../core/parking/parking-request.service';
 import { VEHICLE_TYPES } from '../../../../core/parking/parking.constants';
+import { vehicleIconFor } from '../../../../core/parking/vehicle-icon.util';
 import { UiAlert } from '../../../../shared/components/ui-alert/ui-alert';
 import { UiButton } from '../../../../shared/components/ui-button/ui-button';
 import { UiCard } from '../../../../shared/components/ui-card/ui-card';
@@ -21,9 +35,18 @@ import { UiFormField } from '../../../../shared/components/ui-form-field/ui-form
 import { UiIcon } from '../../../../shared/components/ui-icon/ui-icon';
 import { RequestCard } from '../../components/request-card/request-card';
 
-const PLATE_PATTERN = /^[A-Z0-9]{3,4}-?[A-Z0-9]{2,4}$/;
-
 type FormStep = 'loading' | 'select' | 'empty' | 'new-vehicle';
+
+const plateFormatValidator: ValidatorFn = (control) => {
+  const plate = control.value as string;
+  const idVehicleType = control.parent?.get('vehicleType')?.value as number | null;
+
+  if (!plate || idVehicleType === null || idVehicleType === undefined) {
+    return null;
+  }
+
+  return isValidPlate(plate, idVehicleType) ? null : { plateFormat: true };
+};
 
 @Component({
   selector: 'app-new-request-page',
@@ -55,13 +78,27 @@ export class NewRequestPage {
   });
 
   protected readonly newVehicleForm = this.formBuilder.group({
+    vehicleType: this.formBuilder.control<number | null>(null, Validators.required),
     numberPlate: this.formBuilder.nonNullable.control('', [
       Validators.required,
-      Validators.maxLength(8),
-      Validators.pattern(PLATE_PATTERN),
+      Validators.maxLength(PLATE_MAX_LENGTH),
+      plateFormatValidator,
     ]),
-    vehicleType: this.formBuilder.control<number | null>(null, Validators.required),
   });
+
+  private readonly selectedVehicleType = toSignal(
+    this.newVehicleForm.controls.vehicleType.valueChanges,
+    { initialValue: this.newVehicleForm.controls.vehicleType.value },
+  );
+
+  protected readonly plateExample = computed(() => plateExampleFor(this.selectedVehicleType()));
+  protected readonly plateMaxLength = PLATE_MAX_LENGTH;
+
+  protected readonly vehicleIcon = computed(() =>
+    vehicleIconFor(
+      VEHICLE_TYPES.find((type) => type.idVehicleType === this.selectedVehicleType())?.name,
+    ),
+  );
 
   private readonly registeringNewVehicle = signal(false);
 
@@ -106,6 +143,14 @@ export class NewRequestPage {
         control.setValue(firstVehicle.numberPlate);
       }
     });
+
+    this.newVehicleForm.controls.vehicleType.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe((idVehicleType) => {
+        const control = this.newVehicleForm.controls.numberPlate;
+        control.setValue(formatPlate(control.value, idVehicleType), { emitEvent: false });
+        control.updateValueAndValidity({ emitEvent: false });
+      });
   }
 
   errorFor(
@@ -113,6 +158,16 @@ export class NewRequestPage {
     message: string,
   ): string | null {
     return control.invalid && control.touched ? message : null;
+  }
+
+  plateError(): string | null {
+    const control = this.newVehicleForm.controls.numberPlate;
+    if (control.valid || !control.touched) {
+      return null;
+    }
+    return control.hasError('plateFormat')
+      ? plateErrorFor(this.newVehicleForm.controls.vehicleType.value)
+      : 'Ingresa la placa de tu vehículo.';
   }
 
   registerNewVehicle(): void {
@@ -127,7 +182,7 @@ export class NewRequestPage {
 
   normalizePlate(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const plate = input.value.toUpperCase().replace(/\s+/g, '');
+    const plate = formatPlate(input.value, this.newVehicleForm.controls.vehicleType.value);
 
     input.value = plate;
     this.newVehicleForm.controls.numberPlate.setValue(plate);

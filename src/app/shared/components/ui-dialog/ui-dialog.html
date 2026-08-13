@@ -1,0 +1,34 @@
+<div class="ui-dialog__scrim" (click)="dismiss()"></div>
+
+<div
+  class="ui-dialog__panel"
+  [class]="'ui-dialog__panel--' + tone()"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="ui-dialog-title"
+>
+  <header class="ui-dialog__head">
+    <h2 id="ui-dialog-title" class="ui-dialog__title">{{ title() }}</h2>
+    <button
+      type="button"
+      class="ui-dialog__close"
+      aria-label="Cerrar"
+      [disabled]="busy()"
+      (click)="dismiss()"
+    >
+      <app-ui-icon name="x" [size]="18" />
+    </button>
+  </header>
+
+  @if (description(); as description) {
+    <p class="ui-dialog__description">{{ description }}</p>
+  }
+
+  <div class="ui-dialog__body">
+    <ng-content />
+  </div>
+
+  <footer class="ui-dialog__actions">
+    <ng-content select="[dialogActions]" />
+  </footer>
+</div>
