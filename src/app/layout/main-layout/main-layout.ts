@@ -21,6 +21,7 @@ const HOME_ITEM: NavItem = { label: 'Inicio', icon: 'home', route: '/home' };
 const APPLICANT_ITEMS: NavItem[] = [
   { label: 'Nueva solicitud', icon: 'car', route: '/solicitudes/nueva' },
   { label: 'Mis solicitudes', icon: 'clipboard', route: '/solicitudes', exact: true },
+  { label: 'Mis vehículos', icon: 'car', route: '/vehiculos', exact: true },
   {
     label: 'Historial',
     icon: 'history',

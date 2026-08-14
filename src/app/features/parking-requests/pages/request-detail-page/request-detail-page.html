@@ -42,12 +42,14 @@
   @if (decision(); as decision) {
     <section
       class="decision"
-      [class.decision--rejected]="canResubmit()"
+      [class.decision--rejected]="isRejected()"
       aria-labelledby="decision-title"
     >
       <h2 class="decision__title" id="decision-title">
-        <app-ui-icon [name]="canResubmit() ? 'alert-triangle' : 'check-circle'" [size]="18" />
-        <span>{{ canResubmit() ? 'Motivo del rechazo' : 'Comentario de la revisión' }}</span>
+        <span class="decision__icon" aria-hidden="true">
+          <app-ui-icon [name]="isRejected() ? 'alert-triangle' : 'check-circle'" [size]="18" />
+        </span>
+        <span>{{ isRejected() ? 'Motivo del rechazo' : 'Comentario de la revisión' }}</span>
       </h2>
 
       <blockquote class="decision__comment">{{ decision.observation }}</blockquote>
@@ -134,6 +136,13 @@
         <app-ui-icon name="refresh" [size]="18" />
         Reenviar solicitud
       </app-ui-button>
+    </div>
+  } @else if (isRejected()) {
+    <div class="actions">
+      <app-ui-alert tone="info">
+        Esta solicitud pertenece al ciclo {{ request.applicant.numberCycle }} y ya no puede
+        reenviarse. Registra una nueva solicitud para el ciclo vigente.
+      </app-ui-alert>
     </div>
   }
 

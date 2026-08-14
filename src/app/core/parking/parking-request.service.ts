@@ -11,8 +11,8 @@ import {
   ParkingRequestOut,
   ParkingRequestResubmitIn,
 } from './models/parking-request.model';
-import { ApplicantVehicle } from './models/vehicle.model';
-import { PARKING_REQUEST_PATH } from './parking.constants';
+import { CurrentCycleService } from '../portal/current-cycle.service';
+import { MAX_REQUESTS_PER_CYCLE, PARKING_REQUEST_PATH } from './parking.constants';
 
 const REQUESTS_URL = `${environment.gatewayUrl}${PARKING_REQUEST_PATH}`;
 
@@ -25,6 +25,7 @@ function byNewestFirst(a: ParkingRequestInformation, b: ParkingRequestInformatio
 export class ParkingRequestService {
   private readonly http = inject(HttpClient);
   private readonly currentUserService = inject(CurrentUserService);
+  private readonly currentCycleService = inject(CurrentCycleService);
   private readonly detailService = inject(ParkingRequestDetailService);
 
   private readonly applicantId = this.currentUserService.userId;
@@ -46,16 +47,20 @@ export class ParkingRequestService {
       : this.resource.error() !== undefined,
   );
 
-  readonly vehicles = computed<ApplicantVehicle[]>(() => {
-    const seen = new Map<string, ApplicantVehicle>();
-    for (const request of this.requests()) {
-      const { numberPlate, vehicleType } = request.vehicle;
-      if (numberPlate && !seen.has(numberPlate)) {
-        seen.set(numberPlate, { numberPlate, vehicleType });
-      }
-    }
-    return [...seen.values()];
+  readonly maxRequestsPerCycle = MAX_REQUESTS_PER_CYCLE;
+
+  readonly currentCycleRequests = computed(() => {
+    const cycleName = this.currentCycleService.name();
+    return cycleName === null
+      ? []
+      : this.requests().filter((request) => request.applicant.numberCycle?.trim() === cycleName);
   });
+
+  readonly hasReachedCycleLimit = computed(
+    () =>
+      this.currentCycleService.name() !== null &&
+      this.currentCycleRequests().length >= MAX_REQUESTS_PER_CYCLE,
+  );
 
   create(request: ParkingRequestIn): Observable<ParkingRequestOut> {
     return this.http.post<ParkingRequestOut>(REQUESTS_URL, request);

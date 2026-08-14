@@ -20,6 +20,7 @@
   position: absolute;
   inset: 0;
   background-color: rgba(22, 22, 43, 0.45);
+  animation: ui-dialog-scrim-in 180ms ease-out both;
 }
 
 .ui-dialog__panel {
@@ -34,12 +35,15 @@
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
   border-top: 4px solid var(--color-primary);
+  animation: ui-dialog-panel-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
 
   @include bp.respond-down(bp.$breakpoint-mobile) {
     width: 100%;
     max-height: 90dvh;
     padding: var(--space-5) var(--space-4) var(--space-6);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    animation-name: ui-dialog-sheet-in;
+    animation-duration: 280ms;
   }
 }
 
@@ -107,5 +111,32 @@
 
   @include bp.respond-down(bp.$breakpoint-mobile) {
     flex-direction: column-reverse;
+  }
+}
+
+@keyframes ui-dialog-scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes ui-dialog-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-4)) scale(0.97);
+  }
+}
+
+@keyframes ui-dialog-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-dialog__scrim,
+  .ui-dialog__panel {
+    animation-name: ui-dialog-scrim-in;
+    animation-duration: 120ms;
   }
 }

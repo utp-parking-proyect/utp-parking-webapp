@@ -36,6 +36,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'vehiculos',
+        canActivate: [roleGuard(APPLICANT_ROLES)],
+        loadComponent: () =>
+          import('./features/vehicles/pages/my-vehicles-page/my-vehicles-page').then(
+            (m) => m.MyVehiclesPage,
+          ),
+      },
+      {
         path: 'perfil',
         loadComponent: () =>
           import('./features/profile/pages/profile-page/profile-page').then((m) => m.ProfilePage),

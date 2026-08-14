@@ -16,11 +16,13 @@ import { WorkflowEntry } from '../../../../core/parking/models/parking-request.m
 import { ParkingRequestDetailService } from '../../../../core/parking/parking-request-detail.service';
 import { ParkingRequestService } from '../../../../core/parking/parking-request.service';
 import {
+  canResubmit,
   isRejected,
   requestOutcome,
   statusTone,
   toDate,
 } from '../../../../core/parking/request-status.util';
+import { CurrentCycleService } from '../../../../core/portal/current-cycle.service';
 import { vehicleIconFor } from '../../../../core/parking/vehicle-icon.util';
 import { UiAlert } from '../../../../shared/components/ui-alert/ui-alert';
 import { UiBadge } from '../../../../shared/components/ui-badge/ui-badge';
@@ -55,12 +57,15 @@ import { StatusLabelPipe } from '../../../../shared/pipes/status-label-pipe';
 export class RequestDetailPage {
   private readonly parkingRequestService = inject(ParkingRequestService);
   private readonly detailService = inject(ParkingRequestDetailService);
+  private readonly currentCycleService = inject(CurrentCycleService);
   private readonly formBuilder = inject(FormBuilder);
 
   readonly requestId = input.required<string>();
 
   protected readonly request = this.detailService.detail;
-  protected readonly isLoading = this.detailService.isLoading;
+  protected readonly isLoading = computed(
+    () => this.detailService.isLoading() || this.currentCycleService.isLoading(),
+  );
   protected readonly hasFailed = this.detailService.hasFailed;
 
   protected readonly dateRequest = computed(() => toDate(this.request()?.dateRequest));
@@ -69,9 +74,13 @@ export class RequestDetailPage {
     const request = this.request();
     return request ? statusTone(request) : 'neutral';
   });
-  protected readonly canResubmit = computed(() => {
+  protected readonly isRejected = computed(() => {
     const request = this.request();
     return !!request && isRejected(request);
+  });
+  protected readonly canResubmit = computed(() => {
+    const request = this.request();
+    return !!request && canResubmit(request, this.currentCycleService.name());
   });
   protected readonly vehicleIcon = computed(() =>
     vehicleIconFor(this.request()?.vehicle.vehicleType),

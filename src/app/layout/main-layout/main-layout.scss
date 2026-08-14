@@ -180,21 +180,32 @@
   display: none;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  flex: 0 0 auto;
+  width: var(--topbar-height);
+  height: var(--topbar-height);
   border: 0;
-  border-radius: var(--radius-sm);
-  background-color: var(--brand-accent-soft);
-  color: var(--brand-accent-strong);
+  border-radius: 0;
+  background: linear-gradient(135deg, #ff7a7a, var(--brand-accent));
+  color: var(--color-text-inverse);
   cursor: pointer;
+  transition: filter var(--transition-fast);
+
+  &:hover {
+    filter: brightness(1.05);
+  }
 
   &:focus-visible {
     outline: none;
-    box-shadow: var(--shadow-focus);
+    box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.6);
   }
 
   @include bp.respond-down(bp.$breakpoint-tablet) {
     display: inline-flex;
+    margin-inline-start: calc(var(--space-6) * -1);
+  }
+
+  @include bp.respond-down(bp.$breakpoint-mobile) {
+    margin-inline-start: calc(var(--space-4) * -1);
   }
 }
 

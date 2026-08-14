@@ -29,6 +29,14 @@ const APPLICANT_ACTIONS: HomeAction[] = [
     route: '/solicitudes',
   },
   {
+    title: 'Mis vehículos',
+    description:
+      'Registra tus vehículos y elige cuáles quedan disponibles para nuevas solicitudes.',
+    cta: 'Administrar vehículos',
+    icon: 'car',
+    route: '/vehiculos',
+  },
+  {
     title: 'Historial',
     description: 'Consulta las solicitudes que ya fueron atendidas por el personal SAE.',
     cta: 'Ver historial',

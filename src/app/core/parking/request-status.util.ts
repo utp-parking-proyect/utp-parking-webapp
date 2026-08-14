@@ -30,6 +30,23 @@ export function isRejected(request: ParkingRequestInformation): boolean {
   return requestOutcome(request) === 'rejected';
 }
 
+export function isFromCurrentCycle(
+  request: ParkingRequestInformation,
+  currentCycleName: string | null,
+): boolean {
+  if (currentCycleName === null) {
+    return false;
+  }
+  return (request.applicant?.numberCycle?.trim() ?? '') === currentCycleName;
+}
+
+export function canResubmit(
+  request: ParkingRequestInformation,
+  currentCycleName: string | null,
+): boolean {
+  return isRejected(request) && isFromCurrentCycle(request, currentCycleName);
+}
+
 export function statusTone(request: ParkingRequestInformation): BadgeTone {
   switch (requestOutcome(request)) {
     case 'approved':
