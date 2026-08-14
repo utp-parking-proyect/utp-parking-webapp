@@ -4,3 +4,8 @@
 <div class="ui-alert__content">
   <ng-content />
 </div>
+@if (dismissible()) {
+  <button type="button" class="ui-alert__close" aria-label="Cerrar aviso" (click)="dismiss()">
+    <app-ui-icon name="x" [size]="16" />
+  </button>
+}

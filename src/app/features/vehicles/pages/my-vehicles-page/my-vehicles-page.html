@@ -20,13 +20,13 @@
 
 @if (successMessage(); as message) {
   <div class="feedback">
-    <app-ui-alert tone="success">{{ message }}</app-ui-alert>
+    <app-ui-alert tone="success" (closed)="successMessage.set(null)">{{ message }}</app-ui-alert>
   </div>
 }
 
 @if (errorMessage(); as message) {
   <div class="feedback">
-    <app-ui-alert tone="danger">{{ message }}</app-ui-alert>
+    <app-ui-alert tone="danger" (closed)="errorMessage.set(null)">{{ message }}</app-ui-alert>
   </div>
 }
 
@@ -74,6 +74,48 @@
               {{ vehicle.active ? 'Activo' : 'Deshabilitado' }}
             </app-ui-badge>
           </header>
+
+          @if (accessFor(vehicle); as access) {
+            <div [class]="'vehicle__access vehicle__access--' + access.status">
+              <span class="vehicle__access-icon" aria-hidden="true">
+                <app-ui-icon [name]="accessIcon(access)" [size]="18" />
+              </span>
+
+              <div class="vehicle__access-body">
+                <p class="vehicle__access-title">
+                  <span>{{ accessLabel(access) }}</span>
+                  <app-ui-badge [tone]="accessTone(access)">
+                    {{ access.request ? (access.request.status | statusLabel) : 'Sin solicitud' }}
+                  </app-ui-badge>
+                </p>
+
+                <p class="vehicle__access-detail">
+                  @switch (access.status) {
+                    @case ('allowed') {
+                      Autorizado para ingresar a los estacionamientos en el ciclo
+                      {{ access.cycleName }}.
+                    }
+                    @case ('in-review') {
+                      Tu solicitud del ciclo {{ access.cycleName }} sigue en revisión. No se permite
+                      usar este vehículo hasta que el personal SAE la apruebe.
+                    }
+                    @case ('rejected') {
+                      Tu solicitud del ciclo {{ access.cycleName }} fue rechazada. No se permite
+                      usar este vehículo para ingresar.
+                    }
+                    @case ('no-request') {
+                      No tienes una solicitud aprobada en el ciclo {{ access.cycleName }}. No se
+                      permite usar este vehículo para ingresar.
+                    }
+                    @default {
+                      No pudimos verificar el permiso de ingreso de este vehículo. Vuelve a
+                      intentarlo en unos minutos.
+                    }
+                  }
+                </p>
+              </div>
+            </div>
+          }
 
           <p class="vehicle__description">
             @if (vehicle.active) {
@@ -172,7 +214,7 @@
       </app-ui-form-field>
 
       @if (errorMessage(); as message) {
-        <app-ui-alert tone="danger">{{ message }}</app-ui-alert>
+        <app-ui-alert tone="danger" (closed)="errorMessage.set(null)">{{ message }}</app-ui-alert>
       }
     </form>
 

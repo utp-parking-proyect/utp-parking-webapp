@@ -1,5 +1,7 @@
 <table class="reviews-table">
-  <caption class="sr-only">Solicitudes de estacionamiento asignadas para revisión</caption>
+  <caption class="sr-only">
+    Solicitudes de estacionamiento asignadas para revisión
+  </caption>
   <thead>
     <tr>
       <th scope="col">N.° solicitud</th>
@@ -42,7 +44,9 @@
         </td>
 
         <td data-label="Estado">
-          <app-ui-badge [tone]="statusTone(request)">{{ request.status | statusLabel }}</app-ui-badge>
+          <app-ui-badge [tone]="statusTone(request)">{{
+            request.status | statusLabel
+          }}</app-ui-badge>
         </td>
 
         <td class="reviews-table__action">

@@ -31,6 +31,7 @@ export type IconName =
   | 'inbox'
   | 'refresh'
   | 'message-square'
+  | 'search'
   | 'motorcycle'
   | 'pickup';
 

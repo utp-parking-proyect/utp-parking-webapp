@@ -29,7 +29,7 @@
 
   @if (errorMessage(); as message) {
     <div class="detail__feedback">
-      <app-ui-alert tone="danger">{{ message }}</app-ui-alert>
+      <app-ui-alert tone="danger" (closed)="errorMessage.set(null)">{{ message }}</app-ui-alert>
     </div>
   }
 
@@ -181,9 +181,7 @@
       </app-ui-button>
     </div>
   } @else {
-    <app-ui-alert tone="info">
-      Esta solicitud ya fue respondida y no admite cambios.
-    </app-ui-alert>
+    <app-ui-alert tone="info"> Esta solicitud ya fue respondida y no admite cambios. </app-ui-alert>
   }
 
   @if (action() === 'approve') {

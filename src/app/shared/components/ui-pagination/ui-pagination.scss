@@ -1,0 +1,118 @@
+@use 'styles/breakpoints' as bp;
+
+:host {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+
+  @include bp.respond-down(bp.$breakpoint-tablet) {
+    margin-top: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  @include bp.respond-down(bp.$breakpoint-mobile) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.pagination__summary {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+
+  strong {
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  @include bp.respond-down(bp.$breakpoint-mobile) {
+    text-align: center;
+  }
+}
+
+.pagination__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  @include bp.respond-down(bp.$breakpoint-mobile) {
+    justify-content: center;
+  }
+}
+
+.pagination__pages {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pagination__page,
+.pagination__arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding-inline: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+
+  &:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--color-border-focus);
+    box-shadow: var(--shadow-focus);
+  }
+
+  &:disabled {
+    color: var(--color-text-disabled);
+    cursor: not-allowed;
+  }
+}
+
+.pagination__page--active {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
+
+  &:hover:not(:disabled) {
+    color: var(--color-text-inverse);
+  }
+}
+
+.pagination__arrow--prev app-ui-icon {
+  transform: rotate(180deg);
+}
+
+.pagination__gap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 2.25rem;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}

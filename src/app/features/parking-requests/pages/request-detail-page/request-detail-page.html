@@ -29,13 +29,13 @@
 
   @if (successMessage(); as message) {
     <div class="detail__feedback">
-      <app-ui-alert tone="success">{{ message }}</app-ui-alert>
+      <app-ui-alert tone="success" (closed)="successMessage.set(null)">{{ message }}</app-ui-alert>
     </div>
   }
 
   @if (errorMessage(); as message) {
     <div class="detail__feedback">
-      <app-ui-alert tone="danger">{{ message }}</app-ui-alert>
+      <app-ui-alert tone="danger" (closed)="errorMessage.set(null)">{{ message }}</app-ui-alert>
     </div>
   }
 

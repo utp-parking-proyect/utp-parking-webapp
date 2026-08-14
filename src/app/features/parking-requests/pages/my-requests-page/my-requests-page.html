@@ -30,13 +30,13 @@
 
 @if (successMessage(); as message) {
   <div class="feedback">
-    <app-ui-alert tone="success">{{ message }}</app-ui-alert>
+    <app-ui-alert tone="success" (closed)="successMessage.set(null)">{{ message }}</app-ui-alert>
   </div>
 }
 
 @if (errorMessage(); as message) {
   <div class="feedback">
-    <app-ui-alert tone="danger">{{ message }}</app-ui-alert>
+    <app-ui-alert tone="danger" (closed)="errorMessage.set(null)">{{ message }}</app-ui-alert>
   </div>
 }
 
@@ -55,42 +55,74 @@
 </nav>
 
 @if (view() === 'historial') {
-  <div class="filters">
-    @if (cycles().length) {
-      <app-ui-form-field label="Filtrar por ciclo" inputId="cycle-filter">
+  <section
+    class="filters"
+    [class.filters--active]="hasActiveFilters()"
+    aria-label="Filtros del historial"
+  >
+    <div class="filters__head">
+      <h2 class="filters__title">
+        <span class="filters__icon" aria-hidden="true">
+          <app-ui-icon name="search" [size]="16" />
+        </span>
+        <span>Filtrar historial</span>
+      </h2>
+
+      <span class="filters__count">
+        {{ visibleRequests().length }} de {{ totalRequests() }} solicitudes
+      </span>
+
+      @if (hasActiveFilters()) {
+        <button type="button" class="filters__clear" (click)="clearFilters()">
+          <app-ui-icon name="x" [size]="14" />
+          <span>Limpiar filtros</span>
+        </button>
+      }
+    </div>
+
+    <div class="filters__grid">
+      @if (cycles().length) {
+        <app-ui-form-field class="filters__field" label="Ciclo" inputId="cycle-filter">
+          <span class="ui-affix">
+            <app-ui-icon name="history" [size]="18" />
+          </span>
+          <select
+            id="cycle-filter"
+            class="ui-select"
+            [value]="selectedCycle()"
+            (change)="setCycleFilter($event)"
+          >
+            <option [value]="allCycles">Todos los ciclos</option>
+            @for (cycle of cycles(); track cycle) {
+              <option [value]="cycle">{{ cycle }}</option>
+            }
+          </select>
+          <span class="ui-affix">
+            <app-ui-icon name="chevron-down" [size]="18" />
+          </span>
+        </app-ui-form-field>
+      }
+
+      <app-ui-form-field class="filters__field" label="Orden por fecha" inputId="date-order">
+        <span class="ui-affix">
+          <app-ui-icon name="calendar" [size]="18" />
+        </span>
         <select
-          id="cycle-filter"
+          id="date-order"
           class="ui-select"
-          [value]="selectedCycle()"
-          (change)="setCycleFilter($event)"
+          [value]="dateOrder()"
+          (change)="setDateOrder($event)"
         >
-          <option [value]="allCycles">Todos los ciclos</option>
-          @for (cycle of cycles(); track cycle) {
-            <option [value]="cycle">{{ cycle }}</option>
+          @for (option of dateOrders; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
           }
         </select>
         <span class="ui-affix">
           <app-ui-icon name="chevron-down" [size]="18" />
         </span>
       </app-ui-form-field>
-    }
-
-    <app-ui-form-field label="Ordenar por fecha" inputId="date-order">
-      <select
-        id="date-order"
-        class="ui-select"
-        [value]="dateOrder()"
-        (change)="setDateOrder($event)"
-      >
-        @for (option of dateOrders; track option.value) {
-          <option [value]="option.value">{{ option.label }}</option>
-        }
-      </select>
-      <span class="ui-affix">
-        <app-ui-icon name="chevron-down" [size]="18" />
-      </span>
-    </app-ui-form-field>
-  </div>
+    </div>
+  </section>
 }
 
 @if (isLoading()) {

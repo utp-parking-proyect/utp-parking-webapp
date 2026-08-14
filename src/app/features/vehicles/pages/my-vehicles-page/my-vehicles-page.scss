@@ -104,6 +104,91 @@ app-ui-card {
   color: var(--color-text-muted);
 }
 
+.vehicle__access {
+  --access-accent: var(--color-text-secondary);
+  --access-bg: var(--color-surface-muted);
+  --access-border: var(--color-border);
+
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+  padding-inline-start: calc(var(--space-3) + 4px);
+  border: 1px solid var(--access-border);
+  border-radius: var(--radius-md);
+  background-image: linear-gradient(
+    135deg,
+    var(--access-bg),
+    color-mix(in srgb, var(--color-surface) 60%, var(--access-bg))
+  );
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 4px;
+    background-color: var(--access-accent);
+  }
+}
+
+.vehicle__access--allowed {
+  --access-accent: var(--color-success);
+  --access-bg: var(--color-success-bg);
+  --access-border: color-mix(in srgb, var(--color-success) 28%, transparent);
+}
+
+.vehicle__access--in-review {
+  --access-accent: var(--color-warning);
+  --access-bg: var(--color-warning-bg);
+  --access-border: color-mix(in srgb, var(--color-warning) 30%, transparent);
+}
+
+.vehicle__access--rejected {
+  --access-accent: var(--color-danger);
+  --access-bg: var(--color-danger-bg);
+  --access-border: var(--color-danger-border);
+}
+
+.vehicle__access-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface);
+  box-shadow:
+    inset 0 0 0 1px var(--access-border),
+    var(--shadow-xs);
+  color: var(--access-accent);
+}
+
+.vehicle__access-body {
+  min-width: 0;
+}
+
+.vehicle__access-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--access-accent);
+}
+
+.vehicle__access-detail {
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-secondary);
+}
+
 .vehicle__description {
   flex: 1 1 auto;
   margin-top: var(--space-4);

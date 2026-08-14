@@ -131,18 +131,27 @@ export class MyRequestsPage {
   protected readonly dateOrders = DATE_ORDERS;
   protected readonly dateOrder = signal<DateOrder>('newest');
 
+  private readonly viewRequests = computed(() =>
+    this.requests().filter((request) => matchesView(request, this.view(), this.currentCycleName())),
+  );
+
+  protected readonly totalRequests = computed(() => this.viewRequests().length);
+
+  protected readonly hasActiveFilters = computed(() => this.selectedCycle() !== ALL_CYCLES);
+
   protected readonly visibleRequests = computed(() => {
     const view = this.view();
     const cycle = this.selectedCycle();
-    const matching = this.requests().filter((request) => {
-      if (!matchesView(request, view, this.currentCycleName())) {
-        return false;
-      }
-      return view !== 'historial' || cycle === ALL_CYCLES || cycleOf(request) === cycle;
-    });
+    const matching = this.viewRequests().filter(
+      (request) => view !== 'historial' || cycle === ALL_CYCLES || cycleOf(request) === cycle,
+    );
 
     return view === 'historial' ? sortByDate(matching, this.dateOrder()) : matching;
   });
+
+  clearFilters(): void {
+    this.cycleFilter.set(ALL_CYCLES);
+  }
 
   setDateOrder(event: Event): void {
     this.dateOrder.set((event.target as HTMLSelectElement).value as DateOrder);
