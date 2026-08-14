@@ -4,6 +4,7 @@ import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { ParkingRequestService } from '../../../../core/parking/parking-request.service';
+import { VehicleService } from '../../../../core/parking/vehicle.service';
 import { NewRequestPage } from './new-request-page';
 
 describe('NewRequestPage plate validation', () => {
@@ -48,11 +49,26 @@ describe('NewRequestPage plate validation', () => {
         {
           provide: ParkingRequestService,
           useValue: {
-            vehicles: signal([]),
             requests: signal([]),
             isLoading: signal(false),
             hasFailed: signal(true),
+            maxRequestsPerCycle: 2,
+            currentCycleRequests: signal([]),
+            hasReachedCycleLimit: signal(false),
             create: () => ({ subscribe: () => undefined }),
+            reload: () => undefined,
+          },
+        },
+        {
+          provide: VehicleService,
+          useValue: {
+            vehicles: signal([]),
+            activeVehicles: signal([]),
+            registeredVehicles: signal(0),
+            maxVehicles: signal(5),
+            hasReachedLimit: signal(false),
+            isLoading: signal(false),
+            hasFailed: signal(true),
             reload: () => undefined,
           },
         },

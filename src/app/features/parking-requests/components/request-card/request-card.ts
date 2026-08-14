@@ -2,7 +2,12 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ParkingRequestInformation } from '../../../../core/parking/models/parking-request.model';
-import { isRejected, statusTone, toDate } from '../../../../core/parking/request-status.util';
+import {
+  canResubmit,
+  isRejected,
+  statusTone,
+  toDate,
+} from '../../../../core/parking/request-status.util';
 import { vehicleIconFor } from '../../../../core/parking/vehicle-icon.util';
 import { UiBadge } from '../../../../shared/components/ui-badge/ui-badge';
 import { UiButton } from '../../../../shared/components/ui-button/ui-button';
@@ -21,6 +26,7 @@ export class RequestCard {
   readonly request = input.required<ParkingRequestInformation>();
   readonly actionable = input(false);
   readonly resubmitting = input(false);
+  readonly currentCycle = input<string | null>(null);
 
   readonly resubmit = output<ParkingRequestInformation>();
 
@@ -30,5 +36,10 @@ export class RequestCard {
   protected readonly vehicleIcon = computed(() =>
     vehicleIconFor(this.request().vehicle.vehicleType),
   );
-  protected readonly showResubmit = computed(() => this.actionable() && isRejected(this.request()));
+  protected readonly showRejection = computed(
+    () => this.actionable() && isRejected(this.request()),
+  );
+  protected readonly showResubmit = computed(
+    () => this.actionable() && canResubmit(this.request(), this.currentCycle()),
+  );
 }

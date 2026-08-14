@@ -18,6 +18,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { apiErrorMessage } from '../../../../core/parking/api-error.util';
 import { ParkingRequestIn } from '../../../../core/parking/models/parking-request.model';
+import { VehicleDetail } from '../../../../core/parking/models/vehicle.model';
 import {
   PLATE_MAX_LENGTH,
   formatPlate,
@@ -27,15 +28,17 @@ import {
 } from '../../../../core/parking/number-plate.util';
 import { ParkingRequestService } from '../../../../core/parking/parking-request.service';
 import { VEHICLE_TYPES } from '../../../../core/parking/parking.constants';
+import { VehicleService } from '../../../../core/parking/vehicle.service';
 import { vehicleIconFor } from '../../../../core/parking/vehicle-icon.util';
 import { UiAlert } from '../../../../shared/components/ui-alert/ui-alert';
+import { UiBadge } from '../../../../shared/components/ui-badge/ui-badge';
 import { UiButton } from '../../../../shared/components/ui-button/ui-button';
 import { UiCard } from '../../../../shared/components/ui-card/ui-card';
 import { UiFormField } from '../../../../shared/components/ui-form-field/ui-form-field';
 import { UiIcon } from '../../../../shared/components/ui-icon/ui-icon';
 import { RequestCard } from '../../components/request-card/request-card';
 
-type FormStep = 'loading' | 'select' | 'empty' | 'new-vehicle';
+type FormStep = 'loading' | 'limit-reached' | 'select' | 'empty' | 'new-vehicle';
 
 const plateFormatValidator: ValidatorFn = (control) => {
   const plate = control.value as string;
@@ -56,6 +59,7 @@ const plateFormatValidator: ValidatorFn = (control) => {
     RouterLink,
     RequestCard,
     UiAlert,
+    UiBadge,
     UiButton,
     UiCard,
     UiFormField,
@@ -67,11 +71,22 @@ const plateFormatValidator: ValidatorFn = (control) => {
 export class NewRequestPage {
   private readonly formBuilder = inject(FormBuilder);
   private readonly parkingRequestService = inject(ParkingRequestService);
+  private readonly vehicleService = inject(VehicleService);
 
   protected readonly vehicleTypes = VEHICLE_TYPES;
-  protected readonly vehicles = this.parkingRequestService.vehicles;
-  protected readonly vehiclesLoading = this.parkingRequestService.isLoading;
-  protected readonly vehiclesFailed = this.parkingRequestService.hasFailed;
+  protected readonly vehicles = this.vehicleService.vehicles;
+  protected readonly activeVehicles = this.vehicleService.activeVehicles;
+  protected readonly vehiclesLoading = this.vehicleService.isLoading;
+  protected readonly vehiclesFailed = this.vehicleService.hasFailed;
+  protected readonly vehiclesLimitReached = this.vehicleService.hasReachedLimit;
+  protected readonly maxVehicles = this.vehicleService.maxVehicles;
+
+  protected readonly maxRequestsPerCycle = this.parkingRequestService.maxRequestsPerCycle;
+  protected readonly cycleRequests = computed(
+    () => this.parkingRequestService.currentCycleRequests().length,
+  );
+  protected readonly cycleLimitReached = this.parkingRequestService.hasReachedCycleLimit;
+  private readonly requestsLoading = this.parkingRequestService.isLoading;
 
   protected readonly existingForm = this.formBuilder.nonNullable.group({
     numberPlate: ['', Validators.required],
@@ -112,18 +127,25 @@ export class NewRequestPage {
   });
 
   protected readonly selectedVehicle = computed(() =>
-    this.vehicles().find((vehicle) => vehicle.numberPlate === this.selectedPlate()),
+    this.activeVehicles().find((vehicle) => vehicle.numberPlate === this.selectedPlate()),
   );
 
   protected readonly step = computed<FormStep>(() => {
-    if (this.vehiclesLoading()) {
+    if (this.vehiclesLoading() || this.requestsLoading()) {
       return 'loading';
+    }
+    if (this.cycleLimitReached()) {
+      return 'limit-reached';
     }
     if (this.registeringNewVehicle() || this.vehiclesFailed()) {
       return 'new-vehicle';
     }
-    return this.vehicles().length > 0 ? 'select' : 'empty';
+    return this.activeVehicles().length > 0 ? 'select' : 'empty';
   });
+
+  protected readonly hasOnlyInactiveVehicles = computed(
+    () => this.vehicles().length > 0 && this.activeVehicles().length === 0,
+  );
 
   protected readonly isRegistered = computed(() => this.createdRequestId() !== null);
 
@@ -136,7 +158,7 @@ export class NewRequestPage {
 
   constructor() {
     effect(() => {
-      const [firstVehicle] = this.vehicles();
+      const [firstVehicle] = this.activeVehicles();
       const control = this.existingForm.controls.numberPlate;
 
       if (firstVehicle && !control.value) {
@@ -151,6 +173,10 @@ export class NewRequestPage {
         control.setValue(formatPlate(control.value, idVehicleType), { emitEvent: false });
         control.updateValueAndValidity({ emitEvent: false });
       });
+  }
+
+  iconFor(vehicle: VehicleDetail): ReturnType<typeof vehicleIconFor> {
+    return vehicleIconFor(vehicle.vehicleType);
   }
 
   errorFor(
@@ -190,7 +216,7 @@ export class NewRequestPage {
   }
 
   submit(): void {
-    if (this.submitting()) {
+    if (this.submitting() || this.cycleLimitReached()) {
       return;
     }
 
@@ -208,6 +234,7 @@ export class NewRequestPage {
         this.submittedPlate.set(payload.numberPlate);
         this.createdRequestId.set(response.parkingRequestId);
         this.parkingRequestService.reload();
+        this.vehicleService.reload();
       },
       error: (error: HttpErrorResponse) => {
         this.submitting.set(false);

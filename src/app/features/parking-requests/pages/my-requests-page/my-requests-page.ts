@@ -1,12 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { apiErrorMessage } from '../../../../core/parking/api-error.util';
@@ -109,6 +102,11 @@ export class MyRequestsPage {
     () => this.parkingRequestService.isLoading() || this.currentCycleService.isLoading(),
   );
   protected readonly hasFailed = this.parkingRequestService.hasFailed;
+  protected readonly maxRequestsPerCycle = this.parkingRequestService.maxRequestsPerCycle;
+  protected readonly cycleLimitReached = this.parkingRequestService.hasReachedCycleLimit;
+  protected readonly cycleRequests = computed(
+    () => this.parkingRequestService.currentCycleRequests().length,
+  );
 
   protected readonly view = computed<RequestsView>(() => {
     const requested = this.vista();
@@ -212,9 +210,8 @@ export class MyRequestsPage {
   }
 
   countFor(view: RequestsView): number {
-    return this.requests().filter((request) =>
-      matchesView(request, view, this.currentCycleName()),
-    ).length;
+    return this.requests().filter((request) => matchesView(request, view, this.currentCycleName()))
+      .length;
   }
 
   reload(): void {

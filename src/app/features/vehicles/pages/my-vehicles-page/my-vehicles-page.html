@@ -1,0 +1,233 @@
+<header class="page-header">
+  <div>
+    <h1 class="page-header__title">Mis vehículos</h1>
+    <p class="page-header__subtitle">
+      Administra los vehículos con los que puedes solicitar el ingreso a los estacionamientos de la
+      UTP.
+      @if (maxVehicles(); as maxVehicles) {
+        <span class="page-header__counter">
+          Tienes {{ registeredVehicles() }} de {{ maxVehicles }} vehículos registrados.
+        </span>
+      }
+    </p>
+  </div>
+
+  <app-ui-button size="lg" [disabled]="hasReachedLimit() || isLoading()" (click)="openForm()">
+    <app-ui-icon name="plus-circle" [size]="18" />
+    Agregar vehículo
+  </app-ui-button>
+</header>
+
+@if (successMessage(); as message) {
+  <div class="feedback">
+    <app-ui-alert tone="success">{{ message }}</app-ui-alert>
+  </div>
+}
+
+@if (errorMessage(); as message) {
+  <div class="feedback">
+    <app-ui-alert tone="danger">{{ message }}</app-ui-alert>
+  </div>
+}
+
+@if (hasReachedLimit() && !isLoading()) {
+  <div class="feedback">
+    <app-ui-alert tone="info">
+      Has alcanzado el máximo de {{ maxVehicles() }} vehículos registrados. Deshabilitar un vehículo
+      no libera espacio: su historial de solicitudes se conserva.
+    </app-ui-alert>
+  </div>
+}
+
+@if (isLoading()) {
+  <app-ui-card>
+    <p class="state">
+      <span class="state__spinner" aria-hidden="true"></span>
+      <span>Cargando tus vehículos…</span>
+    </p>
+  </app-ui-card>
+} @else if (hasFailed()) {
+  <app-ui-card>
+    <app-ui-alert tone="danger">
+      No pudimos cargar tus vehículos. Inténtalo nuevamente en unos minutos.
+    </app-ui-alert>
+    <div class="state__actions">
+      <app-ui-button variant="secondary" (click)="reload()">Reintentar</app-ui-button>
+    </div>
+  </app-ui-card>
+} @else if (vehicles().length) {
+  <div class="vehicles">
+    @for (vehicle of vehicles(); track vehicle.idVehicle) {
+      <app-ui-card>
+        <div class="vehicle" [class.vehicle--inactive]="!vehicle.active">
+          <header class="vehicle__head">
+            <span class="vehicle__icon">
+              <app-ui-icon [name]="iconFor(vehicle)" [size]="20" />
+            </span>
+
+            <div class="vehicle__identity">
+              <h2 class="vehicle__plate">{{ vehicle.numberPlate }}</h2>
+              <p class="vehicle__type">{{ vehicle.vehicleType }}</p>
+            </div>
+
+            <app-ui-badge [tone]="vehicle.active ? 'success' : 'neutral'">
+              {{ vehicle.active ? 'Activo' : 'Deshabilitado' }}
+            </app-ui-badge>
+          </header>
+
+          <p class="vehicle__description">
+            @if (vehicle.active) {
+              Puedes seleccionarlo al registrar una nueva solicitud.
+            } @else {
+              No podrás seleccionarlo en nuevas solicitudes hasta que lo habilites. Sus solicitudes
+              anteriores se mantienen en tu historial.
+            }
+          </p>
+
+          <div class="vehicle__actions">
+            <app-ui-button
+              [variant]="vehicle.active ? 'secondary' : 'primary'"
+              [block]="true"
+              [loading]="updatingId() === vehicle.idVehicle"
+              [disabled]="updatingId() !== null"
+              (click)="askAvailabilityChange(vehicle)"
+            >
+              @if (updatingId() === vehicle.idVehicle) {
+                Actualizando…
+              } @else {
+                {{ vehicle.active ? 'Deshabilitar' : 'Habilitar' }}
+              }
+            </app-ui-button>
+          </div>
+        </div>
+      </app-ui-card>
+    }
+  </div>
+} @else {
+  <app-ui-card>
+    <div class="empty">
+      <span class="empty__icon">
+        <app-ui-icon name="car" [size]="26" />
+      </span>
+      <h2 class="empty__title">Aún no tienes vehículos registrados</h2>
+      <p class="empty__description">
+        Registra un vehículo para poder solicitar la autorización de ingreso al estacionamiento.
+      </p>
+      <app-ui-button size="lg" (click)="openForm()">Agregar vehículo</app-ui-button>
+    </div>
+  </app-ui-card>
+}
+
+<p class="page-foot">
+  <a routerLink="/solicitudes/nueva">
+    <span>Ir a nueva solicitud</span>
+    <app-ui-icon name="chevron-right" [size]="16" />
+  </a>
+</p>
+
+@if (formOpen()) {
+  <app-ui-dialog
+    title="Agregar vehículo"
+    description="El vehículo quedará disponible para tus próximas solicitudes."
+    [busy]="registering()"
+    (closed)="closeForm()"
+  >
+    <form class="dialog__form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <app-ui-form-field
+        label="Tipo de vehículo"
+        inputId="new-vehicle-type"
+        [error]="errorFor('Selecciona el tipo de vehículo.')"
+      >
+        <select id="new-vehicle-type" class="ui-select" formControlName="vehicleType">
+          <option [ngValue]="null" disabled>Selecciona una opción</option>
+          @for (type of vehicleTypes; track type.idVehicleType) {
+            <option [ngValue]="type.idVehicleType">{{ type.name }}</option>
+          }
+        </select>
+        <span class="ui-affix">
+          <app-ui-icon name="chevron-down" [size]="18" />
+        </span>
+      </app-ui-form-field>
+
+      <app-ui-form-field
+        label="Placa"
+        inputId="new-vehicle-plate"
+        [hint]="'Ejemplo: ' + plateExample()"
+        [error]="plateError()"
+      >
+        <input
+          id="new-vehicle-plate"
+          class="ui-input"
+          type="text"
+          inputmode="text"
+          [attr.maxlength]="plateMaxLength"
+          autocomplete="off"
+          [placeholder]="plateExample()"
+          formControlName="numberPlate"
+          (input)="normalizePlate($event)"
+        />
+        <span class="ui-affix">
+          <app-ui-icon [name]="newVehicleIcon()" [size]="18" />
+        </span>
+      </app-ui-form-field>
+
+      @if (errorMessage(); as message) {
+        <app-ui-alert tone="danger">{{ message }}</app-ui-alert>
+      }
+    </form>
+
+    <div dialogActions class="dialog__buttons">
+      <app-ui-button variant="secondary" [disabled]="registering()" (click)="closeForm()">
+        Cancelar
+      </app-ui-button>
+      <app-ui-button [loading]="registering()" [disabled]="registering()" (click)="submit()">
+        {{ registering() ? 'Registrando…' : 'Registrar vehículo' }}
+      </app-ui-button>
+    </div>
+  </app-ui-dialog>
+}
+
+@if (availabilityTarget(); as vehicle) {
+  <app-ui-dialog
+    [title]="
+      vehicle.active ? '¿Deseas deshabilitar este vehículo?' : '¿Deseas habilitar este vehículo?'
+    "
+    [description]="
+      vehicle.active
+        ? 'Ya no podrás seleccionarlo para nuevas solicitudes hasta que lo vuelvas a habilitar. Sus solicitudes y su historial se conservan.'
+        : 'Volverá a estar disponible para tus próximas solicitudes.'
+    "
+    [tone]="vehicle.active ? 'danger' : 'brand'"
+    [busy]="updatingId() !== null"
+    (closed)="cancelAvailabilityChange()"
+  >
+    <dl class="dialog__summary">
+      <div>
+        <dt>Vehículo</dt>
+        <dd>{{ vehicle.numberPlate }}</dd>
+      </div>
+      <div>
+        <dt>Tipo</dt>
+        <dd>{{ vehicle.vehicleType }}</dd>
+      </div>
+    </dl>
+
+    <div dialogActions class="dialog__buttons">
+      <app-ui-button
+        variant="secondary"
+        [disabled]="updatingId() !== null"
+        (click)="cancelAvailabilityChange()"
+      >
+        Cancelar
+      </app-ui-button>
+      <app-ui-button
+        [variant]="vehicle.active ? 'danger' : 'primary'"
+        [loading]="updatingId() !== null"
+        [disabled]="updatingId() !== null"
+        (click)="confirmAvailabilityChange()"
+      >
+        {{ vehicle.active ? 'Deshabilitar' : 'Habilitar' }}
+      </app-ui-button>
+    </div>
+  </app-ui-dialog>
+}

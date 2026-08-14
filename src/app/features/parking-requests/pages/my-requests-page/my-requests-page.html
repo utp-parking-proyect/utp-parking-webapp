@@ -4,16 +4,29 @@
     <p class="page-header__subtitle">
       Consulta el estado de tus solicitudes de ingreso a los estacionamientos de la UTP.
       @if (currentCycleName(); as cycleName) {
-        <span class="page-header__cycle">Ciclo vigente: {{ cycleName }}</span>
+        <span class="page-header__cycle">
+          Ciclo vigente: {{ cycleName }} · Has realizado {{ cycleRequests() }} de
+          {{ maxRequestsPerCycle }} solicitudes.
+        </span>
       }
     </p>
   </div>
 
-  <app-ui-button size="lg" routerLink="/solicitudes/nueva">
-    <app-ui-icon name="plus-circle" [size]="18" />
-    Nueva solicitud
-  </app-ui-button>
+  @if (!cycleLimitReached()) {
+    <app-ui-button size="lg" routerLink="/solicitudes/nueva">
+      <app-ui-icon name="plus-circle" [size]="18" />
+      Nueva solicitud
+    </app-ui-button>
+  }
 </header>
+
+@if (cycleLimitReached()) {
+  <div class="feedback">
+    <app-ui-alert tone="info">
+      Has alcanzado el máximo de {{ maxRequestsPerCycle }} solicitudes permitidas para este ciclo.
+    </app-ui-alert>
+  </div>
+}
 
 @if (successMessage(); as message) {
   <div class="feedback">
@@ -102,6 +115,7 @@
       <app-request-card
         [request]="request"
         [actionable]="true"
+        [currentCycle]="currentCycleName()"
         [resubmitting]="resubmittingId() === request.idRequest"
         (resubmit)="askResubmit($event)"
       />
@@ -116,9 +130,7 @@
 
       @if (filteredOutByCycle()) {
         <h2 class="empty__title">No hay solicitudes en este ciclo</h2>
-        <p class="empty__description">
-          Elige «Todos los ciclos» para ver el historial completo.
-        </p>
+        <p class="empty__description">Elige «Todos los ciclos» para ver el historial completo.</p>
       } @else if (requests().length) {
         <h2 class="empty__title">No hay solicitudes en esta vista</h2>
         <p class="empty__description">
