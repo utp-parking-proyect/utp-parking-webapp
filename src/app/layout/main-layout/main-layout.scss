@@ -15,7 +15,9 @@
   width: var(--sidebar-rail);
   background-color: var(--color-surface);
   border-inline-end: 1px solid var(--color-border);
-  transition: width var(--transition-base), transform var(--transition-base);
+  transition:
+    width var(--transition-base),
+    transform var(--transition-base);
 
   .shell--expanded & {
     width: var(--sidebar-width);
@@ -79,7 +81,9 @@
   color: var(--color-text-secondary);
   text-align: center;
   text-decoration: none;
-  transition: color var(--transition-fast), background-color var(--transition-fast);
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast);
 
   &::before {
     content: '';
@@ -373,7 +377,9 @@
   font-size: var(--text-base);
   text-align: start;
   cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
 
   &:hover {
     background-color: var(--color-danger-bg);

@@ -12,9 +12,19 @@ import {
   plateErrorFor,
   plateExampleFor,
 } from '../../../../core/parking/number-plate.util';
+import { ParkingRequestService } from '../../../../core/parking/parking-request.service';
 import { VEHICLE_TYPES } from '../../../../core/parking/parking.constants';
 import { VehicleService } from '../../../../core/parking/vehicle.service';
+import {
+  UNKNOWN_VEHICLE_ACCESS,
+  VehicleAccess,
+  vehicleAccessFor,
+  vehicleAccessIcon,
+  vehicleAccessLabel,
+  vehicleAccessTone,
+} from '../../../../core/parking/vehicle-access.util';
 import { vehicleIconFor } from '../../../../core/parking/vehicle-icon.util';
+import { CurrentCycleService } from '../../../../core/portal/current-cycle.service';
 import { UiAlert } from '../../../../shared/components/ui-alert/ui-alert';
 import { UiBadge } from '../../../../shared/components/ui-badge/ui-badge';
 import { UiButton } from '../../../../shared/components/ui-button/ui-button';
@@ -22,6 +32,7 @@ import { UiCard } from '../../../../shared/components/ui-card/ui-card';
 import { UiDialog } from '../../../../shared/components/ui-dialog/ui-dialog';
 import { UiFormField } from '../../../../shared/components/ui-form-field/ui-form-field';
 import { UiIcon } from '../../../../shared/components/ui-icon/ui-icon';
+import { StatusLabelPipe } from '../../../../shared/pipes/status-label-pipe';
 
 const plateFormatValidator: ValidatorFn = (control) => {
   const plate = control.value as string;
@@ -40,6 +51,7 @@ const plateFormatValidator: ValidatorFn = (control) => {
   imports: [
     ReactiveFormsModule,
     RouterLink,
+    StatusLabelPipe,
     UiAlert,
     UiBadge,
     UiButton,
@@ -54,6 +66,8 @@ const plateFormatValidator: ValidatorFn = (control) => {
 export class MyVehiclesPage {
   private readonly formBuilder = inject(FormBuilder);
   private readonly vehicleService = inject(VehicleService);
+  private readonly parkingRequestService = inject(ParkingRequestService);
+  private readonly currentCycleService = inject(CurrentCycleService);
 
   protected readonly vehicleTypes = VEHICLE_TYPES;
   protected readonly vehicles = this.vehicleService.vehicles;
@@ -62,6 +76,26 @@ export class MyVehiclesPage {
   protected readonly hasReachedLimit = this.vehicleService.hasReachedLimit;
   protected readonly isLoading = this.vehicleService.isLoading;
   protected readonly hasFailed = this.vehicleService.hasFailed;
+
+  protected readonly currentCycleName = this.currentCycleService.name;
+  protected readonly accessUnavailable = computed(
+    () =>
+      this.parkingRequestService.hasFailed() ||
+      this.currentCycleService.hasFailed() ||
+      this.currentCycleName() === null,
+  );
+
+  private readonly accessByVehicle = computed(() => {
+    const requests = this.parkingRequestService.requests();
+    const cycleName = this.accessUnavailable() ? null : this.currentCycleName();
+
+    return new Map(
+      this.vehicles().map((vehicle) => [
+        vehicle.idVehicle,
+        vehicleAccessFor(vehicle, requests, cycleName),
+      ]),
+    );
+  });
 
   protected readonly plateMaxLength = PLATE_MAX_LENGTH;
 
@@ -109,6 +143,22 @@ export class MyVehiclesPage {
 
   iconFor(vehicle: VehicleDetail): ReturnType<typeof vehicleIconFor> {
     return vehicleIconFor(vehicle.vehicleType);
+  }
+
+  accessFor(vehicle: VehicleDetail): VehicleAccess {
+    return this.accessByVehicle().get(vehicle.idVehicle) ?? UNKNOWN_VEHICLE_ACCESS;
+  }
+
+  accessLabel(access: VehicleAccess): string {
+    return vehicleAccessLabel(access);
+  }
+
+  accessTone(access: VehicleAccess): ReturnType<typeof vehicleAccessTone> {
+    return vehicleAccessTone(access);
+  }
+
+  accessIcon(access: VehicleAccess): ReturnType<typeof vehicleAccessIcon> {
+    return vehicleAccessIcon(access);
   }
 
   errorFor(message: string): string | null {
@@ -228,5 +278,7 @@ export class MyVehiclesPage {
 
   reload(): void {
     this.vehicleService.reload();
+    this.parkingRequestService.reload();
+    this.currentCycleService.reload();
   }
 }

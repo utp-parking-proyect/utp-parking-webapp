@@ -1,0 +1,47 @@
+<p class="pagination__summary">
+  Mostrando <strong>{{ rangeStart() }}</strong
+  >&ndash;<strong>{{ rangeEnd() }}</strong> de <strong>{{ totalItems() }}</strong> {{ itemLabel() }}
+</p>
+
+<nav class="pagination__nav" aria-label="Paginación">
+  <button
+    type="button"
+    class="pagination__arrow pagination__arrow--prev"
+    aria-label="Página anterior"
+    [disabled]="isFirst()"
+    (click)="previous()"
+  >
+    <app-ui-icon name="chevron-right" [size]="16" />
+  </button>
+
+  <ul class="pagination__pages">
+    @for (slot of slots(); track $index) {
+      <li>
+        @if (slot === 'gap') {
+          <span class="pagination__gap" aria-hidden="true">&hellip;</span>
+        } @else {
+          <button
+            type="button"
+            class="pagination__page"
+            [class.pagination__page--active]="slot === currentPage()"
+            [attr.aria-current]="slot === currentPage() ? 'page' : null"
+            [attr.aria-label]="'Página ' + slot"
+            (click)="goTo(+slot)"
+          >
+            {{ slot }}
+          </button>
+        }
+      </li>
+    }
+  </ul>
+
+  <button
+    type="button"
+    class="pagination__arrow"
+    aria-label="Página siguiente"
+    [disabled]="isLast()"
+    (click)="next()"
+  >
+    <app-ui-icon name="chevron-right" [size]="16" />
+  </button>
+</nav>

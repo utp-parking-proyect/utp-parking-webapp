@@ -1,4 +1,5 @@
 @use 'styles/breakpoints' as bp;
+@use 'styles/filters' as filters;
 
 :host {
   display: block;
@@ -73,24 +74,7 @@
   display: contents;
 }
 
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  margin-bottom: var(--space-5);
-
-  app-ui-form-field {
-    flex: 1 1 14rem;
-    max-width: 18rem;
-  }
-
-  @include bp.respond-down(bp.$breakpoint-mobile) {
-    app-ui-form-field {
-      flex-basis: 100%;
-      max-width: none;
-    }
-  }
-}
+@include filters.filters-panel(repeat(3, minmax(0, 1fr)));
 
 .views__item {
   display: inline-flex;

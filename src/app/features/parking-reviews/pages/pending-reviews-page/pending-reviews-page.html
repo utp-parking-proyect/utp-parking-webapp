@@ -35,6 +35,109 @@
   }
 </nav>
 
+@if (!isLoading() && !hasFailed() && (hasRequests() || hasActiveFilters())) {
+  <section
+    class="filters"
+    [class.filters--active]="hasActiveFilters()"
+    aria-label="Filtros de solicitudes"
+  >
+    <div class="filters__head">
+      <h2 class="filters__title">
+        <span class="filters__icon" aria-hidden="true">
+          <app-ui-icon name="search" [size]="16" />
+        </span>
+        <span>Filtrar solicitudes</span>
+      </h2>
+
+      <span class="filters__count">
+        {{ filteredRequests().length }} de {{ totalRequests() }} solicitudes
+      </span>
+
+      @if (hasActiveFilters()) {
+        <button type="button" class="filters__clear" (click)="clearFilters()">
+          <app-ui-icon name="x" [size]="14" />
+          <span>Limpiar filtros</span>
+        </button>
+      }
+    </div>
+
+    <div class="filters__grid">
+      <app-ui-form-field
+        class="filters__field filters__field--search"
+        label="Buscar vehículo o solicitante"
+        inputId="reviews-search"
+        hint="Ingresa una placa, un nombre o un usuario."
+      >
+        <span class="ui-affix">
+          <app-ui-icon name="search" [size]="18" />
+        </span>
+        <input
+          id="reviews-search"
+          class="ui-input"
+          type="text"
+          autocomplete="off"
+          placeholder="Ej. ABC-123 o Juan Pérez"
+          [value]="searchTerm()"
+          (input)="setSearchTerm($event)"
+        />
+        @if (searchTerm()) {
+          <button
+            type="button"
+            class="ui-affix"
+            aria-label="Limpiar búsqueda"
+            (click)="clearSearchTerm()"
+          >
+            <app-ui-icon name="x" [size]="16" />
+          </button>
+        }
+      </app-ui-form-field>
+
+      <app-ui-form-field class="filters__field" label="Ciclo" inputId="reviews-cycle">
+        <span class="ui-affix">
+          <app-ui-icon name="history" [size]="18" />
+        </span>
+        <select
+          id="reviews-cycle"
+          class="ui-select"
+          [value]="selectedCycle()"
+          (change)="setCycleFilter($event)"
+        >
+          <option [value]="allCycles">Todos los ciclos</option>
+          @for (cycle of cycles(); track cycle) {
+            <option [value]="cycle">{{ cycle }}</option>
+          }
+        </select>
+        <span class="ui-affix">
+          <app-ui-icon name="chevron-down" [size]="18" />
+        </span>
+      </app-ui-form-field>
+
+      <app-ui-form-field
+        class="filters__field"
+        label="Orden por fecha"
+        inputId="reviews-date-order"
+      >
+        <span class="ui-affix">
+          <app-ui-icon name="calendar" [size]="18" />
+        </span>
+        <select
+          id="reviews-date-order"
+          class="ui-select"
+          [value]="dateOrder()"
+          (change)="setDateOrder($event)"
+        >
+          @for (option of dateOrders; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+        <span class="ui-affix">
+          <app-ui-icon name="chevron-down" [size]="18" />
+        </span>
+      </app-ui-form-field>
+    </div>
+  </section>
+}
+
 @if (isLoading()) {
   <app-ui-card>
     <p class="state">
@@ -54,19 +157,36 @@
 } @else if (visibleRequests().length) {
   <app-ui-card [padded]="false">
     <app-review-request-list [requests]="visibleRequests()" />
+    <app-ui-pagination
+      [page]="page()"
+      [pageSize]="pageSize"
+      [totalItems]="filteredRequests().length"
+      itemLabel="solicitudes"
+      (pageChange)="goToPage($event)"
+    />
   </app-ui-card>
 } @else {
   <app-ui-card>
     <div class="empty">
       <span class="empty__icon">
-        <app-ui-icon [name]="view() === 'revisadas' ? 'history' : 'inbox'" [size]="26" />
+        <app-ui-icon
+          [name]="hasActiveFilters() ? 'search' : view() === 'revisadas' ? 'history' : 'inbox'"
+          [size]="26"
+        />
       </span>
 
-      @if (view() === 'revisadas') {
-        <h2 class="empty__title">Todavía no has revisado solicitudes</h2>
+      @if (hasActiveFilters()) {
+        <h2 class="empty__title">Sin resultados para tu búsqueda</h2>
         <p class="empty__description">
-          Aquí verás las solicitudes que apruebes o rechaces.
+          Ninguna solicitud coincide con el ciclo o el texto ingresado. Ajusta los filtros para
+          seguir revisando.
         </p>
+        <app-ui-button size="lg" variant="secondary" (click)="clearFilters()">
+          Limpiar filtros
+        </app-ui-button>
+      } @else if (view() === 'revisadas') {
+        <h2 class="empty__title">Todavía no has revisado solicitudes</h2>
+        <p class="empty__description">Aquí verás las solicitudes que apruebes o rechaces.</p>
         <app-ui-button size="lg" routerLink="/revisiones">Ver pendientes</app-ui-button>
       } @else {
         <h2 class="empty__title">No tienes solicitudes pendientes</h2>

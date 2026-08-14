@@ -138,7 +138,9 @@
           </fieldset>
 
           @if (errorMessage(); as message) {
-            <app-ui-alert tone="danger">{{ message }}</app-ui-alert>
+            <app-ui-alert tone="danger" (closed)="errorMessage.set(null)">{{
+              message
+            }}</app-ui-alert>
           }
 
           <div class="form__actions">
@@ -252,7 +254,9 @@
           </app-ui-form-field>
 
           @if (errorMessage(); as message) {
-            <app-ui-alert tone="danger">{{ message }}</app-ui-alert>
+            <app-ui-alert tone="danger" (closed)="errorMessage.set(null)">{{
+              message
+            }}</app-ui-alert>
           }
 
           <div class="form__actions">

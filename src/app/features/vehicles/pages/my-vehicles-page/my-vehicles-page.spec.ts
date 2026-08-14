@@ -4,12 +4,37 @@ import { WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
+import { ParkingRequestInformation } from '../../../../core/parking/models/parking-request.model';
 import { VehicleDetail } from '../../../../core/parking/models/vehicle.model';
+import { ParkingRequestService } from '../../../../core/parking/parking-request.service';
 import { VehicleService } from '../../../../core/parking/vehicle.service';
+import { CurrentCycleService } from '../../../../core/portal/current-cycle.service';
 import { MyVehiclesPage } from './my-vehicles-page';
 
 function vehicle(idVehicle: number, numberPlate: string, active: boolean): VehicleDetail {
   return { idVehicle, numberPlate, idVehicleType: 1, vehicleType: 'Automóvil', active };
+}
+
+function request(
+  idRequest: number,
+  numberPlate: string,
+  numberCycle: string,
+  status: string,
+): ParkingRequestInformation {
+  return {
+    idRequest,
+    applicant: {
+      idApplicant: 1,
+      nameApplicant: 'Juan',
+      lastNameApplicant: 'Pérez',
+      usernameApplicant: 'U23201703',
+      numberCycle,
+    },
+    vehicle: { numberPlate, vehicleType: 'Automóvil' },
+    dateRequest: '2026-03-01T10:00:00Z',
+    dateResponse: null,
+    status,
+  };
 }
 
 describe('MyVehiclesPage', () => {
@@ -19,6 +44,9 @@ describe('MyVehiclesPage', () => {
   let hasReachedLimit: WritableSignal<boolean>;
   let isLoading: WritableSignal<boolean>;
   let hasFailed: WritableSignal<boolean>;
+  let requests: WritableSignal<ParkingRequestInformation[]>;
+  let requestsFailed: WritableSignal<boolean>;
+  let cycleName: WritableSignal<string | null>;
   let setAvailability: ReturnType<typeof vi.fn>;
 
   function host(): HTMLElement {
@@ -55,6 +83,9 @@ describe('MyVehiclesPage', () => {
     hasReachedLimit = signal(false);
     isLoading = signal(false);
     hasFailed = signal(false);
+    requests = signal<ParkingRequestInformation[]>([]);
+    requestsFailed = signal(false);
+    cycleName = signal<string | null>('2026-1');
     setAvailability = vi.fn(() => of(vehicle(1, 'ABC-123', false)));
 
     TestBed.configureTestingModule({
@@ -74,6 +105,22 @@ describe('MyVehiclesPage', () => {
             hasFailed,
             register: () => of(vehicle(3, 'DEF-789', true)),
             setAvailability,
+            reload: () => undefined,
+          },
+        },
+        {
+          provide: ParkingRequestService,
+          useValue: {
+            requests,
+            hasFailed: requestsFailed,
+            reload: () => undefined,
+          },
+        },
+        {
+          provide: CurrentCycleService,
+          useValue: {
+            name: cycleName,
+            hasFailed: signal(false),
             reload: () => undefined,
           },
         },
@@ -149,6 +196,63 @@ describe('MyVehiclesPage', () => {
     fixture.detectChanges();
 
     expect(text()).toContain('No pudimos cargar tus vehículos');
+  });
+
+  it('indica que el ingreso está permitido con una solicitud aprobada del ciclo vigente', () => {
+    requests.set([request(1, 'ABC-123', '2026-1', 'APROBADO')]);
+    fixture.detectChanges();
+
+    expect(cards()[0].textContent).toContain('Ingreso permitido');
+    expect(cards()[0].textContent).toContain('Autorizado para ingresar');
+    expect(cards()[0].querySelector('.vehicle__access--allowed')).not.toBeNull();
+  });
+
+  it('indica que no se permite usar el vehículo sin solicitud en el ciclo vigente', () => {
+    requests.set([request(1, 'ABC-123', '2025-2', 'APROBADO')]);
+    fixture.detectChanges();
+
+    expect(cards()[0].textContent).toContain('Ingreso no permitido');
+    expect(cards()[0].textContent).toContain('No tienes una solicitud aprobada en el ciclo 2026-1');
+  });
+
+  it('avisa que la solicitud sigue en revisión', () => {
+    requests.set([request(1, 'ABC-123', '2026-1', 'EN REVISIÓN')]);
+    fixture.detectChanges();
+
+    expect(cards()[0].querySelector('.vehicle__access--in-review')).not.toBeNull();
+    expect(cards()[0].textContent).toContain('sigue en revisión');
+  });
+
+  it('avisa que la solicitud del ciclo vigente fue rechazada', () => {
+    requests.set([request(1, 'ABC-123', '2026-1', 'RECHAZADO')]);
+    fixture.detectChanges();
+
+    expect(cards()[0].querySelector('.vehicle__access--rejected')).not.toBeNull();
+    expect(cards()[0].textContent).toContain('fue rechazada');
+  });
+
+  it('mantiene el permiso de ingreso aunque el vehículo esté deshabilitado', () => {
+    requests.set([request(1, 'XYZ-456', '2026-1', 'APROBADO')]);
+    fixture.detectChanges();
+
+    expect(cards()[1].textContent).toContain('Deshabilitado');
+    expect(cards()[1].textContent).toContain('Ingreso permitido');
+  });
+
+  it('no afirma nada sobre el ingreso cuando no se conoce el ciclo vigente', () => {
+    cycleName.set(null);
+    requests.set([request(1, 'ABC-123', '2026-1', 'APROBADO')]);
+    fixture.detectChanges();
+
+    expect(cards()[0].textContent).toContain('Ingreso por confirmar');
+  });
+
+  it('no afirma nada sobre el ingreso cuando fallan las solicitudes', () => {
+    requestsFailed.set(true);
+    requests.set([request(1, 'ABC-123', '2026-1', 'APROBADO')]);
+    fixture.detectChanges();
+
+    expect(cards()[0].textContent).toContain('Ingreso por confirmar');
   });
 
   it('invita a registrar un vehículo cuando no hay ninguno', () => {
