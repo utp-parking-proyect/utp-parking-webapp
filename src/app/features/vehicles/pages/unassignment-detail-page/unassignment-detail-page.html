@@ -1,0 +1,136 @@
+<a class="page-back" routerLink="/solicitudes">
+  <app-ui-icon name="arrow-left" [size]="16" />
+  <span>Volver a mis solicitudes</span>
+</a>
+
+@if (isLoading()) {
+  <app-ui-card>
+    <p class="state">
+      <span class="state__spinner" aria-hidden="true"></span>
+      <span>Cargando la solicitud…</span>
+    </p>
+  </app-ui-card>
+} @else if (hasFailed()) {
+  <app-ui-card>
+    <app-ui-alert tone="danger">
+      No fue posible cargar la solicitud. Inténtalo nuevamente en unos minutos.
+    </app-ui-alert>
+    <div class="state__actions">
+      <app-ui-button variant="secondary" (click)="reload()">Reintentar</app-ui-button>
+    </div>
+  </app-ui-card>
+} @else if (request(); as request) {
+  <header class="page-header">
+    <div>
+      <h1 class="page-header__title">Desasignación #{{ request.idUnassignmentRequest }}</h1>
+      <p class="page-header__subtitle">
+        Detalle de tu solicitud para dejar de ser propietario de este vehículo.
+      </p>
+    </div>
+    <app-ui-badge [tone]="statusTone()">{{ request.status | statusLabel }}</app-ui-badge>
+  </header>
+
+  @if (decision(); as decision) {
+    <section
+      class="decision"
+      [class.decision--rejected]="isRejected()"
+      aria-labelledby="decision-title"
+    >
+      <h2 class="decision__title" id="decision-title">
+        <span class="decision__icon" aria-hidden="true">
+          <app-ui-icon [name]="isRejected() ? 'alert-triangle' : 'check-circle'" [size]="18" />
+        </span>
+        <span>{{ isRejected() ? 'Motivo del rechazo' : 'Comentario de la revisión' }}</span>
+      </h2>
+
+      <blockquote class="decision__comment">{{ decision.observation }}</blockquote>
+
+      <p class="decision__meta">
+        <app-ui-icon name="clock" [size]="14" />
+        <span>
+          {{ decision.status | statusLabel }}
+          @if (entryDate(decision); as changedAt) {
+            · {{ changedAt | date: 'dd MMM yyyy, HH:mm' }}
+          }
+        </span>
+      </p>
+    </section>
+  }
+
+  <div class="detail">
+    <app-ui-card class="detail__panel">
+      <h2 class="detail__title">
+        <app-ui-icon name="clipboard" [size]="18" />
+        <span>Solicitud</span>
+      </h2>
+
+      <dl class="detail__data">
+        <div class="detail__row">
+          <dt>N.° de solicitud</dt>
+          <dd>#{{ request.idUnassignmentRequest }}</dd>
+        </div>
+        <div class="detail__row">
+          <dt>Fecha de solicitud</dt>
+          <dd>
+            @if (dateRequest(); as dateRequest) {
+              {{ dateRequest | date: 'dd MMM yyyy, HH:mm' }}
+            } @else {
+              &mdash;
+            }
+          </dd>
+        </div>
+        <div class="detail__row">
+          <dt>Fecha de respuesta</dt>
+          <dd>
+            @if (dateResponse(); as dateResponse) {
+              {{ dateResponse | date: 'dd MMM yyyy, HH:mm' }}
+            } @else {
+              Pendiente
+            }
+          </dd>
+        </div>
+        <div class="detail__row detail__row--reason">
+          <dt>Motivo</dt>
+          <dd>{{ request.reason }}</dd>
+        </div>
+      </dl>
+    </app-ui-card>
+
+    <app-ui-card class="detail__panel">
+      <h2 class="detail__title">
+        <app-ui-icon [name]="vehicleIcon()" [size]="18" />
+        <span>Vehículo</span>
+      </h2>
+
+      <dl class="detail__data">
+        <div class="detail__row">
+          <dt>Placa</dt>
+          <dd class="detail__plate">{{ request.vehicle.numberPlate }}</dd>
+        </div>
+        <div class="detail__row">
+          <dt>Tipo</dt>
+          <dd>{{ request.vehicle.vehicleType || '—' }}</dd>
+        </div>
+      </dl>
+    </app-ui-card>
+
+    @if (request.workflow.length) {
+      <app-ui-card class="detail__panel detail__panel--wide">
+        <app-request-timeline [entries]="request.workflow" />
+      </app-ui-card>
+    }
+  </div>
+} @else if (notFound()) {
+  <app-ui-card>
+    <div class="empty">
+      <span class="empty__icon">
+        <app-ui-icon name="help-circle" [size]="26" />
+      </span>
+      <h2 class="empty__title">No encontramos esta solicitud</h2>
+      <p class="empty__description">
+        Es posible que no exista o que no te pertenezca. Revisa el listado de tus solicitudes.
+      </p>
+      <app-ui-button size="lg" routerLink="/solicitudes">Ver mis solicitudes</app-ui-button>
+    </div>
+  </app-ui-card>
+}

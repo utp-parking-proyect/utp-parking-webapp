@@ -23,14 +23,23 @@ export class VehicleService {
   );
 
   readonly vehicles = computed<VehicleDetail[]>(() => this.resource.value()?.vehicles ?? []);
-  readonly activeVehicles = computed(() => this.vehicles().filter((vehicle) => vehicle.active));
-  readonly registeredVehicles = computed(
-    () => this.resource.value()?.registeredVehicles ?? this.vehicles().length,
+  readonly activeVehicles = computed(() =>
+    this.vehicles().filter((vehicle) => vehicle.status === 'ACTIVE'),
   );
-  readonly maxVehicles = computed(() => this.resource.value()?.maxVehicles ?? null);
+  readonly assignedVehicles = computed(
+    () => this.resource.value()?.assignedVehicles ?? this.vehicles().length,
+  );
+  readonly activeVehicleCount = computed(
+    () => this.resource.value()?.activeVehicles ?? this.activeVehicles().length,
+  );
+  readonly maxActiveVehicles = computed(() => this.resource.value()?.maxActiveVehicles ?? null);
+  readonly hasFreeActiveSlot = computed(() => {
+    const maxActiveVehicles = this.maxActiveVehicles();
+    return maxActiveVehicles === null || this.activeVehicleCount() < maxActiveVehicles;
+  });
   readonly hasReachedLimit = computed(() => {
-    const maxVehicles = this.maxVehicles();
-    return maxVehicles !== null && this.registeredVehicles() >= maxVehicles;
+    const maxActiveVehicles = this.maxActiveVehicles();
+    return maxActiveVehicles !== null && this.activeVehicleCount() >= maxActiveVehicles;
   });
 
   readonly isLoading = this.resource.isLoading;

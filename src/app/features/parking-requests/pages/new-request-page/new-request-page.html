@@ -93,7 +93,7 @@
             <legend class="picker__legend">Vehículo registrado</legend>
 
             @for (vehicle of vehicles(); track vehicle.idVehicle) {
-              @if (vehicle.active) {
+              @if (vehicle.status === 'ACTIVE') {
                 <label
                   class="picker__option"
                   [class.picker__option--selected]="
@@ -159,8 +159,8 @@
 
           @if (vehiclesLimitReached()) {
             <p class="form__note">
-              Has alcanzado el máximo de {{ maxVehicles() }} vehículos registrados. Puedes
-              administrarlos en <a routerLink="/vehiculos">Mis vehículos</a>.
+              Has alcanzado el máximo de {{ maxActiveVehicles() }} vehículos activos. Deshabilita uno
+              en <a routerLink="/vehiculos">Mis vehículos</a> para registrar otro.
             </p>
           }
         </form>

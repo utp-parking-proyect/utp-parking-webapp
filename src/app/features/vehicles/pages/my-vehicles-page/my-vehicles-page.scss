@@ -45,7 +45,8 @@
   grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
 }
 
-app-ui-card {
+.vehicles app-ui-card,
+.history__items app-ui-card {
   display: flex;
   height: 100%;
 }
@@ -314,4 +315,84 @@ app-ui-card {
   .state__spinner {
     animation-duration: 2s;
   }
+}
+
+.vehicle__unassignment {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+}
+
+.vehicle__unassignment--pending {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.vehicle__unassignment--rejected {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.vehicle__unassignment-title {
+  font-weight: 700;
+}
+
+.vehicle__unassignment-reason {
+  margin-top: var(--space-1);
+}
+
+.history {
+  margin-top: var(--space-7);
+}
+
+.history__title {
+  font-size: var(--text-lg);
+}
+
+.history__description {
+  margin-top: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.history__items {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+  margin-top: var(--space-4);
+}
+
+.history__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.history__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+}
+
+.history__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.history__plate {
+  font-weight: 700;
+}
+
+.history__type,
+.history__reason {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
 }

@@ -64,8 +64,8 @@ describe('NewRequestPage plate validation', () => {
           useValue: {
             vehicles: signal([]),
             activeVehicles: signal([]),
-            registeredVehicles: signal(0),
-            maxVehicles: signal(5),
+            activeVehicleCount: signal(0),
+            maxActiveVehicles: signal(5),
             hasReachedLimit: signal(false),
             isLoading: signal(false),
             hasFailed: signal(true),

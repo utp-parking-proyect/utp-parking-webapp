@@ -79,7 +79,7 @@ export class NewRequestPage {
   protected readonly vehiclesLoading = this.vehicleService.isLoading;
   protected readonly vehiclesFailed = this.vehicleService.hasFailed;
   protected readonly vehiclesLimitReached = this.vehicleService.hasReachedLimit;
-  protected readonly maxVehicles = this.vehicleService.maxVehicles;
+  protected readonly maxActiveVehicles = this.vehicleService.maxActiveVehicles;
 
   protected readonly maxRequestsPerCycle = this.parkingRequestService.maxRequestsPerCycle;
   protected readonly cycleRequests = computed(

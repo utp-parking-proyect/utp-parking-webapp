@@ -33,6 +33,7 @@ const APPLICANT_ITEMS: NavItem[] = [
 
 const SAE_ITEMS: NavItem[] = [
   { label: 'Solicitudes pendientes', icon: 'inbox', route: '/revisiones', exact: true },
+  { label: 'Gestión de vehículos', icon: 'car', route: '/revisiones-vehiculos', exact: true },
   {
     label: 'Revisadas',
     icon: 'history',

@@ -3,7 +3,13 @@ import { VehicleDetail } from './models/vehicle.model';
 import { vehicleAccessFor, vehicleAccessLabel, vehicleAccessTone } from './vehicle-access.util';
 
 function vehicle(numberPlate: string, active = true): VehicleDetail {
-  return { idVehicle: 1, numberPlate, idVehicleType: 1, vehicleType: 'Automóvil', active };
+  return {
+    idVehicle: 1,
+    numberPlate,
+    idVehicleType: 1,
+    vehicleType: 'Automóvil',
+    status: active ? 'ACTIVE' : 'DISABLED',
+  };
 }
 
 function request(
@@ -112,16 +118,6 @@ describe('vehicleAccessFor', () => {
     expect(access.status).toBe('allowed');
   });
 
-  it('mantiene el permiso aunque el vehículo esté deshabilitado', () => {
-    const access = vehicleAccessFor(
-      vehicle('ABC-123', false),
-      [request(1, 'ABC-123', '2026-1', 'APROBADO')],
-      '2026-1',
-    );
-
-    expect(access.status).toBe('allowed');
-  });
-
   it('devuelve un estado desconocido cuando no se conoce el ciclo vigente', () => {
     const access = vehicleAccessFor(
       vehicle('ABC-123'),
@@ -135,6 +131,34 @@ describe('vehicleAccessFor', () => {
 
   it('devuelve sin solicitud cuando el usuario no tiene ninguna', () => {
     const access = vehicleAccessFor(vehicle('ABC-123'), [], '2026-1');
+
+    expect(access.status).toBe('no-request');
+  });
+
+  it('no permite el ingreso si el vehículo está deshabilitado pese a la solicitud aprobada', () => {
+    const access = vehicleAccessFor(
+      vehicle('ABC-123', false),
+      [request(1, 'ABC-123', '2026-1', 'APROBADO')],
+      '2026-1',
+    );
+
+    expect(access.status).toBe('not-active');
+    expect(vehicleAccessLabel(access)).toBe('Ingreso no permitido');
+    expect(access.request?.status).toBe('APROBADO');
+  });
+
+  it('mantiene el rechazo cuando el vehículo está deshabilitado y la solicitud fue rechazada', () => {
+    const access = vehicleAccessFor(
+      vehicle('ABC-123', false),
+      [request(1, 'ABC-123', '2026-1', 'RECHAZADO')],
+      '2026-1',
+    );
+
+    expect(access.status).toBe('rejected');
+  });
+
+  it('informa que no hay solicitud aunque el vehículo esté deshabilitado', () => {
+    const access = vehicleAccessFor(vehicle('ABC-123', false), [], '2026-1');
 
     expect(access.status).toBe('no-request');
   });

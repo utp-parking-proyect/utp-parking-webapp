@@ -4,7 +4,10 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { apiErrorMessage } from '../../../../core/parking/api-error.util';
-import { VehicleDetail } from '../../../../core/parking/models/vehicle.model';
+import {
+  VehicleDetail,
+  VehicleUnassignmentRequestDetail,
+} from '../../../../core/parking/models/vehicle.model';
 import {
   PLATE_MAX_LENGTH,
   formatPlate,
@@ -15,6 +18,11 @@ import {
 import { ParkingRequestService } from '../../../../core/parking/parking-request.service';
 import { VEHICLE_TYPES } from '../../../../core/parking/parking.constants';
 import { VehicleService } from '../../../../core/parking/vehicle.service';
+import {
+  VehicleUnassignmentService,
+  isOpenUnassignment,
+  isRejectedUnassignment,
+} from '../../../../core/parking/vehicle-unassignment.service';
 import {
   UNKNOWN_VEHICLE_ACCESS,
   VehicleAccess,
@@ -68,11 +76,12 @@ export class MyVehiclesPage {
   private readonly vehicleService = inject(VehicleService);
   private readonly parkingRequestService = inject(ParkingRequestService);
   private readonly currentCycleService = inject(CurrentCycleService);
+  private readonly unassignmentService = inject(VehicleUnassignmentService);
 
   protected readonly vehicleTypes = VEHICLE_TYPES;
   protected readonly vehicles = this.vehicleService.vehicles;
-  protected readonly registeredVehicles = this.vehicleService.registeredVehicles;
-  protected readonly maxVehicles = this.vehicleService.maxVehicles;
+  protected readonly activeVehicleCount = this.vehicleService.activeVehicleCount;
+  protected readonly maxActiveVehicles = this.vehicleService.maxActiveVehicles;
   protected readonly hasReachedLimit = this.vehicleService.hasReachedLimit;
   protected readonly isLoading = this.vehicleService.isLoading;
   protected readonly hasFailed = this.vehicleService.hasFailed;
@@ -126,10 +135,105 @@ export class MyVehiclesPage {
     ),
   );
 
-  protected readonly disablingTarget = computed(() => {
-    const target = this.availabilityTarget();
-    return target !== null && target.active ? target : null;
+  protected readonly unassignTarget = signal<VehicleDetail | null>(null);
+  protected readonly unassigning = signal(false);
+
+  protected readonly cycleRequests = computed(
+    () => this.parkingRequestService.currentCycleRequests().length,
+  );
+  protected readonly maxRequestsPerCycle = this.parkingRequestService.maxRequestsPerCycle;
+
+  protected readonly unassignTargetIsAuthorized = computed(() => {
+    const target = this.unassignTarget();
+    return target !== null && this.accessFor(target).status === 'allowed';
   });
+
+  protected readonly unassignForm = this.formBuilder.nonNullable.group({
+    reason: ['', [Validators.required, Validators.maxLength(255)]],
+  });
+
+  private readonly unassignmentByVehicle = this.unassignmentService.latestByVehicle;
+
+  protected readonly unassignedHistory = this.unassignmentService.unassignedVehicles;
+
+  unassignmentFor(vehicle: VehicleDetail): VehicleUnassignmentRequestDetail | null {
+    return this.unassignmentByVehicle().get(vehicle.idVehicle) ?? null;
+  }
+
+  hasOpenUnassignment(vehicle: VehicleDetail): boolean {
+    const unassignment = this.unassignmentFor(vehicle);
+    return unassignment !== null && isOpenUnassignment(unassignment);
+  }
+
+  rejectedUnassignmentFor(vehicle: VehicleDetail): VehicleUnassignmentRequestDetail | null {
+    const unassignment = this.unassignmentFor(vehicle);
+    return unassignment !== null && isRejectedUnassignment(unassignment) ? unassignment : null;
+  }
+
+  rejectionReasonFor(vehicle: VehicleDetail): string | null {
+    const rejected = this.rejectedUnassignmentFor(vehicle);
+    if (rejected === null) {
+      return null;
+    }
+    const lastEntry = rejected.workflow[rejected.workflow.length - 1];
+    return lastEntry?.observation ?? null;
+  }
+
+  askUnassignment(vehicle: VehicleDetail): void {
+    if (this.unassigning() || this.hasOpenUnassignment(vehicle)) {
+      return;
+    }
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+    this.unassignForm.reset({ reason: '' });
+    this.unassignTarget.set(vehicle);
+  }
+
+  cancelUnassignment(): void {
+    if (this.unassigning()) {
+      return;
+    }
+    this.unassignTarget.set(null);
+  }
+
+  unassignReasonError(): string | null {
+    const control = this.unassignForm.controls.reason;
+    if (control.valid || !control.touched) {
+      return null;
+    }
+    return 'Indica el motivo de la desasignación.';
+  }
+
+  confirmUnassignment(): void {
+    const vehicle = this.unassignTarget();
+    if (!vehicle || this.unassigning()) {
+      return;
+    }
+
+    if (this.unassignForm.invalid) {
+      this.unassignForm.markAllAsTouched();
+      return;
+    }
+
+    this.errorMessage.set(null);
+    this.unassigning.set(true);
+
+    this.unassignmentService
+      .requestUnassignment(vehicle.idVehicle, { reason: this.unassignForm.getRawValue().reason })
+      .subscribe({
+        next: () => {
+          this.unassigning.set(false);
+          this.unassignTarget.set(null);
+          this.successMessage.set(
+            `Enviamos tu solicitud de desasignación del vehículo ${vehicle.numberPlate}. El personal SAE la revisará.`,
+          );
+        },
+        error: (error: HttpErrorResponse) => {
+          this.unassigning.set(false);
+          this.errorMessage.set(apiErrorMessage(error));
+        },
+      });
+  }
 
   constructor() {
     this.form.controls.vehicleType.valueChanges
@@ -233,12 +337,24 @@ export class MyVehiclesPage {
     });
   }
 
+  canEnable(vehicle: VehicleDetail): boolean {
+    return vehicle.status === 'ACTIVE' || !this.hasReachedLimit();
+  }
+
   askAvailabilityChange(vehicle: VehicleDetail): void {
     if (this.updatingId() !== null) {
       return;
     }
     this.errorMessage.set(null);
     this.successMessage.set(null);
+
+    if (!this.canEnable(vehicle)) {
+      this.errorMessage.set(
+        `Ya tienes ${this.maxActiveVehicles()} vehículos activos. Deshabilita otro vehículo antes de habilitar este.`,
+      );
+      return;
+    }
+
     this.availabilityTarget.set(vehicle);
   }
 
@@ -255,7 +371,7 @@ export class MyVehiclesPage {
       return;
     }
 
-    const active = !vehicle.active;
+    const active = vehicle.status !== 'ACTIVE';
     this.updatingId.set(vehicle.idVehicle);
 
     this.vehicleService.setAvailability(vehicle.idVehicle, active).subscribe({
@@ -280,5 +396,6 @@ export class MyVehiclesPage {
     this.vehicleService.reload();
     this.parkingRequestService.reload();
     this.currentCycleService.reload();
+    this.unassignmentService.reload();
   }
 }
