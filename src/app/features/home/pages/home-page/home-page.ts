@@ -26,6 +26,44 @@ interface WorkloadStat {
   queryParams?: Params;
 }
 
+interface ParkingAvailability {
+  idLocation: number;
+  nameLocation: string;
+  availableSpaces: number;
+  totalSpaces: number;
+}
+
+interface DigitalPlatform {
+  name: string;
+  logo: string;
+  preview: string;
+  description: string;
+  url: string;
+}
+
+const PLACEHOLDER_PARKING_AVAILABILITY: ParkingAvailability[] = [
+  { idLocation: 1, nameLocation: 'Lima Centro', availableSpaces: 42, totalSpaces: 120 },
+  { idLocation: 2, nameLocation: 'Lima Norte', availableSpaces: 18, totalSpaces: 80 },
+  { idLocation: 3, nameLocation: 'Lima Sur', availableSpaces: 0, totalSpaces: 60 },
+];
+
+const DIGITAL_PLATFORMS: DigitalPlatform[] = [
+  {
+    name: 'UTP+info',
+    logo: 'platforms/utp-info-logo.svg',
+    preview: 'platforms/utp-info-preview.svg',
+    description: 'Encuentra toda la información de la universidad.',
+    url: 'https://info.utp.edu.pe',
+  },
+  {
+    name: 'UTP+class',
+    logo: 'platforms/utp-class-logo.svg',
+    preview: 'platforms/utp-class-preview.svg',
+    description: 'Revisa el contenido de tus clases desde tu computadora o celular.',
+    url: 'https://class.utp.edu.pe',
+  },
+];
+
 const APPLICANT_ACTIONS: HomeAction[] = [
   {
     title: 'Nueva solicitud',
@@ -96,6 +134,29 @@ export class HomePage {
   private readonly unassignmentService = inject(VehicleUnassignmentService);
 
   protected readonly isSae = this.access.isSae;
+  protected readonly isApplicant = this.access.isApplicant;
+  protected readonly isStudent = this.access.isStudent;
+  protected readonly availability = PLACEHOLDER_PARKING_AVAILABILITY;
+  protected readonly platforms = DIGITAL_PLATFORMS;
+
+  protected readonly totalAvailableSpaces = this.availability.reduce(
+    (total, location) => total + location.availableSpaces,
+    0,
+  );
+
+  occupancyFor(location: ParkingAvailability): number {
+    if (location.totalSpaces <= 0) {
+      return 0;
+    }
+    return Math.round((location.availableSpaces / location.totalSpaces) * 100);
+  }
+
+  availabilityTone(location: ParkingAvailability): 'full' | 'low' | 'free' {
+    if (location.availableSpaces === 0) {
+      return 'full';
+    }
+    return this.occupancyFor(location) <= 25 ? 'low' : 'free';
+  }
 
   protected readonly actions = computed<HomeAction[]>(() => [
     ...(this.access.isApplicant() ? APPLICANT_ACTIONS : []),

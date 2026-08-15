@@ -14,7 +14,6 @@ interface NavItem {
   route: string;
   exact?: boolean;
   queryParams?: Params;
-  /** Etiqueta corta para el riel contraído, donde no cabe la etiqueta completa. */
   shortLabel?: string;
 }
 
