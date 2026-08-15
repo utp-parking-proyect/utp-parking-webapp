@@ -4,7 +4,13 @@ import { ParkingRequestInformation } from './models/parking-request.model';
 import { VehicleDetail } from './models/vehicle.model';
 import { requestOutcome, toDate } from './request-status.util';
 
-export type VehicleAccessStatus = 'allowed' | 'in-review' | 'rejected' | 'no-request' | 'unknown';
+export type VehicleAccessStatus =
+  | 'allowed'
+  | 'in-review'
+  | 'rejected'
+  | 'no-request'
+  | 'not-active'
+  | 'unknown';
 
 export interface VehicleAccess {
   status: VehicleAccessStatus;
@@ -17,6 +23,7 @@ const ACCESS_TONES: Readonly<Record<VehicleAccessStatus, BadgeTone>> = {
   'in-review': 'warning',
   rejected: 'danger',
   'no-request': 'neutral',
+  'not-active': 'neutral',
   unknown: 'neutral',
 };
 
@@ -25,6 +32,7 @@ const ACCESS_ICONS: Readonly<Record<VehicleAccessStatus, IconName>> = {
   'in-review': 'clock',
   rejected: 'alert-triangle',
   'no-request': 'info',
+  'not-active': 'alert-triangle',
   unknown: 'help-circle',
 };
 
@@ -70,7 +78,9 @@ export function vehicleAccessFor(
 
   switch (requestOutcome(request)) {
     case 'approved':
-      return { status: 'allowed', cycleName, request };
+      return vehicle.status === 'ACTIVE'
+        ? { status: 'allowed', cycleName, request }
+        : { status: 'not-active', cycleName, request };
     case 'rejected':
       return { status: 'rejected', cycleName, request };
     default:

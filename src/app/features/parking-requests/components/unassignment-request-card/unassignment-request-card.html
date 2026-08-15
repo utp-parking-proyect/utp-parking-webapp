@@ -1,0 +1,84 @@
+<app-ui-card>
+  <header class="request__head">
+    <span class="request__icon">
+      <app-ui-icon [name]="vehicleIcon()" [size]="20" />
+    </span>
+
+    <div class="request__identity">
+      <h3 class="request__plate">{{ request().vehicle.numberPlate }}</h3>
+      <p class="request__type">Desasignación · {{ request().vehicle.vehicleType }}</p>
+    </div>
+
+    <app-ui-badge [tone]="statusTone()">{{ request().status | statusLabel }}</app-ui-badge>
+  </header>
+
+  <dl class="request__data">
+    <div class="request__row">
+      <dt>
+        <app-ui-icon name="calendar" [size]="14" />
+        <span>Fecha de solicitud</span>
+      </dt>
+      <dd>
+        @if (dateRequest(); as dateRequest) {
+          {{ dateRequest | date: 'dd MMM yyyy' }}
+        } @else {
+          &mdash;
+        }
+      </dd>
+    </div>
+
+    <div class="request__row">
+      <dt>
+        <app-ui-icon name="clock" [size]="14" />
+        <span>Fecha de respuesta</span>
+      </dt>
+      <dd>
+        @if (dateResponse(); as dateResponse) {
+          {{ dateResponse | date: 'dd MMM yyyy' }}
+        } @else {
+          Pendiente
+        }
+      </dd>
+    </div>
+
+    <div class="request__row request__row--reason">
+      <dt>
+        <app-ui-icon name="info" [size]="14" />
+        <span>Motivo</span>
+      </dt>
+      <dd>{{ request().reason }}</dd>
+    </div>
+
+    <div class="request__row">
+      <dt>
+        <app-ui-icon name="clipboard" [size]="14" />
+        <span>N.° de solicitud</span>
+      </dt>
+      <dd>{{ request().idUnassignmentRequest }}</dd>
+    </div>
+  </dl>
+
+  @if (rejectionReason(); as reason) {
+    <section
+      class="rejection"
+      aria-labelledby="rejection-title-{{ request().idUnassignmentRequest }}"
+    >
+      <h4 class="rejection__title" id="rejection-title-{{ request().idUnassignmentRequest }}">
+        <span class="rejection__icon" aria-hidden="true">
+          <app-ui-icon name="alert-triangle" [size]="16" />
+        </span>
+        <span>Solicitud rechazada</span>
+      </h4>
+
+      <p class="rejection__description">Motivo del rechazo: {{ reason }}</p>
+    </section>
+  }
+
+  <a
+    class="request__detail-link"
+    [routerLink]="['/solicitudes/desasignacion', request().idUnassignmentRequest]"
+  >
+    <span>Ver detalle</span>
+    <app-ui-icon name="chevron-right" [size]="16" />
+  </a>
+</app-ui-card>

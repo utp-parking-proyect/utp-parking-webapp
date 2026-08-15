@@ -57,6 +57,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'solicitudes/desasignacion/:unassignmentId',
+        canActivate: [roleGuard(APPLICANT_ROLES)],
+        loadComponent: () =>
+          import(
+            './features/vehicles/pages/unassignment-detail-page/unassignment-detail-page'
+          ).then((m) => m.UnassignmentDetailPage),
+      },
+      {
         path: 'solicitudes/:requestId',
         canActivate: [roleGuard(APPLICANT_ROLES)],
         loadComponent: () =>
@@ -71,6 +79,14 @@ export const routes: Routes = [
           import('./features/parking-reviews/pages/pending-reviews-page/pending-reviews-page').then(
             (m) => m.PendingReviewsPage,
           ),
+      },
+      {
+        path: 'revisiones-vehiculos',
+        canActivate: [roleGuard([ROLE_SAE])],
+        loadComponent: () =>
+          import(
+            './features/parking-reviews/pages/vehicle-unassignment-reviews-page/vehicle-unassignment-reviews-page'
+          ).then((m) => m.VehicleUnassignmentReviewsPage),
       },
       {
         path: 'revisiones/:requestId',

@@ -3,6 +3,10 @@ import { ParkingRequestInformation } from './models/parking-request.model';
 
 export type RequestOutcome = 'approved' | 'rejected' | 'pending';
 
+export interface StatusHolder {
+  status?: string | null;
+}
+
 function normalize(status: string): string {
   return status
     .normalize('NFD')
@@ -10,7 +14,7 @@ function normalize(status: string): string {
     .toLowerCase();
 }
 
-export function requestOutcome(request: ParkingRequestInformation): RequestOutcome {
+export function requestOutcome(request: StatusHolder): RequestOutcome {
   const status = normalize(request.status ?? '');
 
   if (status.includes('aprob')) {
@@ -22,11 +26,11 @@ export function requestOutcome(request: ParkingRequestInformation): RequestOutco
   return 'pending';
 }
 
-export function isPendingReview(request: ParkingRequestInformation): boolean {
+export function isPendingReview(request: StatusHolder): boolean {
   return requestOutcome(request) === 'pending';
 }
 
-export function isRejected(request: ParkingRequestInformation): boolean {
+export function isRejected(request: StatusHolder): boolean {
   return requestOutcome(request) === 'rejected';
 }
 
@@ -47,7 +51,7 @@ export function canResubmit(
   return isRejected(request) && isFromCurrentCycle(request, currentCycleName);
 }
 
-export function statusTone(request: ParkingRequestInformation): BadgeTone {
+export function statusTone(request: StatusHolder): BadgeTone {
   switch (requestOutcome(request)) {
     case 'approved':
       return 'success';

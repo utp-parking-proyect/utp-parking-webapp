@@ -1,3 +1,7 @@
+import { ApplicantInformation, VehicleInformation, WorkflowEntry } from './parking-request.model';
+
+export type VehicleStatus = 'ACTIVE' | 'DISABLED' | 'UNASSIGNED';
+
 export interface VehicleTypeOption {
   idVehicleType: number;
   name: string;
@@ -8,13 +12,14 @@ export interface VehicleDetail {
   numberPlate: string;
   idVehicleType: number;
   vehicleType: string;
-  active: boolean;
+  status: VehicleStatus;
 }
 
 export interface VehicleDetailList {
   vehicles: VehicleDetail[];
-  registeredVehicles: number;
-  maxVehicles: number;
+  assignedVehicles: number;
+  activeVehicles: number;
+  maxActiveVehicles: number;
 }
 
 export interface VehicleIn {
@@ -24,4 +29,24 @@ export interface VehicleIn {
 
 export interface VehicleAvailabilityIn {
   active: boolean;
+}
+
+export interface VehicleUnassignmentIn {
+  reason: string;
+}
+
+export interface VehicleUnassignmentRequestDetail {
+  idUnassignmentRequest: number;
+  idVehicle: number;
+  applicant: ApplicantInformation;
+  vehicle: VehicleInformation;
+  reason: string;
+  status: string;
+  dateRequest: string;
+  dateResponse: string | null;
+  workflow: WorkflowEntry[];
+}
+
+export interface VehicleUnassignmentRequestList {
+  unassignmentRequests: VehicleUnassignmentRequestDetail[];
 }

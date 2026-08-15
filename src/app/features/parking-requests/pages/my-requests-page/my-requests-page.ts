@@ -5,6 +5,8 @@ import { RouterLink } from '@angular/router';
 import { apiErrorMessage } from '../../../../core/parking/api-error.util';
 import { ParkingRequestInformation } from '../../../../core/parking/models/parking-request.model';
 import { ParkingRequestService } from '../../../../core/parking/parking-request.service';
+import { VehicleUnassignmentRequestDetail } from '../../../../core/parking/models/vehicle.model';
+import { VehicleUnassignmentService } from '../../../../core/parking/vehicle-unassignment.service';
 import { toDate } from '../../../../core/parking/request-status.util';
 import { CurrentCycleService } from '../../../../core/portal/current-cycle.service';
 import { DateOrder } from '../../../../shared/components/request-timeline/request-timeline';
@@ -15,8 +17,28 @@ import { UiDialog } from '../../../../shared/components/ui-dialog/ui-dialog';
 import { UiFormField } from '../../../../shared/components/ui-form-field/ui-form-field';
 import { UiIcon } from '../../../../shared/components/ui-icon/ui-icon';
 import { RequestCard } from '../../components/request-card/request-card';
+import { UnassignmentRequestCard } from '../../components/unassignment-request-card/unassignment-request-card';
 
 type RequestsView = 'todas' | 'en-curso' | 'historial';
+
+export type RequestKind = 'todas' | 'estacionamiento' | 'desasignacion';
+
+export type RequestItem =
+  | { kind: 'estacionamiento'; key: string; date: string; answered: boolean; cycle: string;
+      parking: ParkingRequestInformation }
+  | { kind: 'desasignacion'; key: string; date: string; answered: boolean;
+      unassignment: VehicleUnassignmentRequestDetail };
+
+interface KindOption {
+  value: RequestKind;
+  label: string;
+}
+
+const KINDS: KindOption[] = [
+  { value: 'todas', label: 'Todas las solicitudes' },
+  { value: 'estacionamiento', label: 'Ingreso a estacionamiento' },
+  { value: 'desasignacion', label: 'Desasignación de vehículo' },
+];
 
 interface ViewOption {
   value: RequestsView;
@@ -40,15 +62,12 @@ function cycleOf(request: ParkingRequestInformation): string {
   return request.applicant.numberCycle?.trim() ?? '';
 }
 
-function sortByDate(
-  requests: ParkingRequestInformation[],
-  order: DateOrder,
-): ParkingRequestInformation[] {
+function sortByDate(items: RequestItem[], order: DateOrder): RequestItem[] {
   const direction = order === 'newest' ? -1 : 1;
-  return [...requests].sort((a, b) => {
-    const timeA = toDate(a.dateRequest)?.getTime() ?? 0;
-    const timeB = toDate(b.dateRequest)?.getTime() ?? 0;
-    const difference = timeA !== timeB ? timeA - timeB : a.idRequest - b.idRequest;
+  return [...items].sort((a, b) => {
+    const timeA = toDate(a.date)?.getTime() ?? 0;
+    const timeB = toDate(b.date)?.getTime() ?? 0;
+    const difference = timeA !== timeB ? timeA - timeB : a.key.localeCompare(b.key);
     return difference * direction;
   });
 }
@@ -57,18 +76,18 @@ function isFromCycle(request: ParkingRequestInformation, cycleName: string | nul
   return cycleName === null || cycleOf(request) === cycleName;
 }
 
-function matchesView(
-  request: ParkingRequestInformation,
-  view: RequestsView,
-  cycleName: string | null,
-): boolean {
+function matchesView(item: RequestItem, view: RequestsView, cycleName: string | null): boolean {
+  if (item.kind === 'desasignacion') {
+    return view === 'en-curso' ? !item.answered : true;
+  }
+
   switch (view) {
     case 'en-curso':
-      return !request.dateResponse && isFromCycle(request, cycleName);
+      return !item.answered && isFromCycle(item.parking, cycleName);
     case 'historial':
       return true;
     default:
-      return isFromCycle(request, cycleName);
+      return isFromCycle(item.parking, cycleName);
   }
 }
 
@@ -79,6 +98,7 @@ function matchesView(
     ReactiveFormsModule,
     RouterLink,
     RequestCard,
+    UnassignmentRequestCard,
     UiAlert,
     UiButton,
     UiCard,
@@ -92,16 +112,44 @@ function matchesView(
 export class MyRequestsPage {
   private readonly parkingRequestService = inject(ParkingRequestService);
   private readonly currentCycleService = inject(CurrentCycleService);
+  private readonly unassignmentService = inject(VehicleUnassignmentService);
 
   readonly vista = input<string>();
 
   protected readonly views = VIEWS;
+  protected readonly kinds = KINDS;
   protected readonly requests = this.parkingRequestService.requests;
   protected readonly currentCycleName = this.currentCycleService.name;
   protected readonly isLoading = computed(
-    () => this.parkingRequestService.isLoading() || this.currentCycleService.isLoading(),
+    () =>
+      this.parkingRequestService.isLoading() ||
+      this.currentCycleService.isLoading() ||
+      this.unassignmentService.isLoading(),
   );
-  protected readonly hasFailed = this.parkingRequestService.hasFailed;
+  protected readonly hasFailed = computed(
+    () => this.parkingRequestService.hasFailed() || this.unassignmentService.hasFailed(),
+  );
+
+  protected readonly items = computed<RequestItem[]>(() => {
+    const parking = this.requests().map<RequestItem>((request) => ({
+      kind: 'estacionamiento',
+      key: `p-${request.idRequest}`,
+      date: request.dateRequest,
+      answered: !!request.dateResponse,
+      cycle: cycleOf(request),
+      parking: request,
+    }));
+
+    const unassignments = this.unassignmentService.myRequests().map<RequestItem>((request) => ({
+      kind: 'desasignacion',
+      key: `u-${request.idUnassignmentRequest}`,
+      date: request.dateRequest,
+      answered: !!request.dateResponse,
+      unassignment: request,
+    }));
+
+    return [...parking, ...unassignments];
+  });
   protected readonly maxRequestsPerCycle = this.parkingRequestService.maxRequestsPerCycle;
   protected readonly cycleLimitReached = this.parkingRequestService.hasReachedCycleLimit;
   protected readonly cycleRequests = computed(
@@ -121,6 +169,11 @@ export class MyRequestsPage {
     ...new Set(this.requests().map(cycleOf).filter(Boolean)),
   ]);
 
+  protected readonly showCycleFilter = computed(
+    () => this.view() === 'historial' && this.cycles().length > 0
+      && this.kindFilter() !== 'desasignacion',
+  );
+
   private readonly cycleFilter = signal(ALL_CYCLES);
 
   protected readonly selectedCycle = computed(() => {
@@ -130,27 +183,43 @@ export class MyRequestsPage {
 
   protected readonly dateOrders = DATE_ORDERS;
   protected readonly dateOrder = signal<DateOrder>('newest');
+  protected readonly kindFilter = signal<RequestKind>('todas');
 
-  private readonly viewRequests = computed(() =>
-    this.requests().filter((request) => matchesView(request, this.view(), this.currentCycleName())),
+  private readonly viewItems = computed(() =>
+    this.items().filter((item) => matchesView(item, this.view(), this.currentCycleName())),
   );
 
-  protected readonly totalRequests = computed(() => this.viewRequests().length);
+  protected readonly totalRequests = computed(() => this.viewItems().length);
 
-  protected readonly hasActiveFilters = computed(() => this.selectedCycle() !== ALL_CYCLES);
+  protected readonly hasActiveFilters = computed(
+    () => this.selectedCycle() !== ALL_CYCLES || this.kindFilter() !== 'todas',
+  );
 
   protected readonly visibleRequests = computed(() => {
     const view = this.view();
     const cycle = this.selectedCycle();
-    const matching = this.viewRequests().filter(
-      (request) => view !== 'historial' || cycle === ALL_CYCLES || cycleOf(request) === cycle,
-    );
+    const kind = this.kindFilter();
+
+    const matching = this.viewItems().filter((item) => {
+      if (kind !== 'todas' && item.kind !== kind) {
+        return false;
+      }
+      if (view !== 'historial' || cycle === ALL_CYCLES || kind === 'desasignacion') {
+        return true;
+      }
+      return item.kind === 'estacionamiento' && item.cycle === cycle;
+    });
 
     return view === 'historial' ? sortByDate(matching, this.dateOrder()) : matching;
   });
 
+  setKindFilter(event: Event): void {
+    this.kindFilter.set((event.target as HTMLSelectElement).value as RequestKind);
+  }
+
   clearFilters(): void {
     this.cycleFilter.set(ALL_CYCLES);
+    this.kindFilter.set('todas');
   }
 
   setDateOrder(event: Event): void {
@@ -159,7 +228,7 @@ export class MyRequestsPage {
 
   protected readonly filteredOutByCycle = computed(
     () =>
-      this.view() === 'historial' &&
+      this.showCycleFilter() &&
       this.selectedCycle() !== ALL_CYCLES &&
       !this.visibleRequests().length,
   );
@@ -219,12 +288,12 @@ export class MyRequestsPage {
   }
 
   countFor(view: RequestsView): number {
-    return this.requests().filter((request) => matchesView(request, view, this.currentCycleName()))
-      .length;
+    return this.items().filter((item) => matchesView(item, view, this.currentCycleName())).length;
   }
 
   reload(): void {
     this.parkingRequestService.reload();
     this.currentCycleService.reload();
+    this.unassignmentService.reload();
   }
 }

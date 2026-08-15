@@ -17,18 +17,19 @@ const VEHICLE_LIST: VehicleDetailList = {
       numberPlate: 'ABC-123',
       idVehicleType: 1,
       vehicleType: 'Automóvil',
-      active: true,
+      status: 'ACTIVE',
     },
     {
       idVehicle: 2,
       numberPlate: 'XYZ-456',
       idVehicleType: 1,
       vehicleType: 'Automóvil',
-      active: false,
+      status: 'DISABLED',
     },
   ],
-  registeredVehicles: 2,
-  maxVehicles: 5,
+  assignedVehicles: 2,
+  activeVehicles: 1,
+  maxActiveVehicles: 5,
 };
 
 describe('VehicleService', () => {
@@ -77,12 +78,13 @@ describe('VehicleService', () => {
     request.flush(VEHICLE_LIST);
   });
 
-  it('expone los vehículos con su contador de registrados y el máximo', async () => {
+  it('expone los vehículos con su contador de activos y el máximo', async () => {
     await loadVehicles();
 
     expect(service.vehicles().length).toBe(2);
-    expect(service.registeredVehicles()).toBe(2);
-    expect(service.maxVehicles()).toBe(5);
+    expect(service.assignedVehicles()).toBe(2);
+    expect(service.activeVehicleCount()).toBe(1);
+    expect(service.maxActiveVehicles()).toBe(5);
     expect(service.hasReachedLimit()).toBe(false);
   });
 
@@ -92,10 +94,17 @@ describe('VehicleService', () => {
     expect(service.activeVehicles().map((vehicle) => vehicle.numberPlate)).toEqual(['ABC-123']);
   });
 
-  it('marca el límite alcanzado cuando el registrado iguala al máximo', async () => {
-    await loadVehicles({ ...VEHICLE_LIST, registeredVehicles: 5, maxVehicles: 5 });
+  it('marca el límite alcanzado cuando los activos igualan al máximo', async () => {
+    await loadVehicles({ ...VEHICLE_LIST, activeVehicles: 5, maxActiveVehicles: 5 });
 
     expect(service.hasReachedLimit()).toBe(true);
+  });
+
+  it('no cuenta los vehículos deshabilitados para el límite de activos', async () => {
+    await loadVehicles({ ...VEHICLE_LIST, assignedVehicles: 8, activeVehicles: 4 });
+
+    expect(service.activeVehicleCount()).toBe(4);
+    expect(service.hasReachedLimit()).toBe(false);
   });
 
   it('registra un vehículo con el tipo y la placa', async () => {

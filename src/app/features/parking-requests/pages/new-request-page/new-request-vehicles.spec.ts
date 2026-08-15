@@ -9,7 +9,13 @@ import { VehicleService } from '../../../../core/parking/vehicle.service';
 import { NewRequestPage } from './new-request-page';
 
 function vehicle(idVehicle: number, numberPlate: string, active: boolean): VehicleDetail {
-  return { idVehicle, numberPlate, idVehicleType: 1, vehicleType: 'Automóvil', active };
+  return {
+    idVehicle,
+    numberPlate,
+    idVehicleType: 1,
+    vehicleType: 'Automóvil',
+    status: active ? 'ACTIVE' : 'DISABLED',
+  };
 }
 
 describe('NewRequestPage vehicle selection', () => {
@@ -59,8 +65,8 @@ describe('NewRequestPage vehicle selection', () => {
           useValue: {
             vehicles,
             activeVehicles: signal(activeVehicles),
-            registeredVehicles: signal(vehicles().length),
-            maxVehicles: signal(5),
+            activeVehicleCount: signal(activeVehicles.length),
+            maxActiveVehicles: signal(5),
             hasReachedLimit: signal(false),
             isLoading: signal(false),
             hasFailed: signal(false),

@@ -2,7 +2,8 @@
   <div>
     <h1 class="page-header__title">Mis solicitudes</h1>
     <p class="page-header__subtitle">
-      Consulta el estado de tus solicitudes de ingreso a los estacionamientos de la UTP.
+      Consulta el estado de tus solicitudes de ingreso a los estacionamientos de la UTP y de
+      desasignación de vehículos.
       @if (currentCycleName(); as cycleName) {
         <span class="page-header__cycle">
           Ciclo vigente: {{ cycleName }} · Has realizado {{ cycleRequests() }} de
@@ -54,55 +55,74 @@
   }
 </nav>
 
-@if (view() === 'historial') {
-  <section
-    class="filters"
-    [class.filters--active]="hasActiveFilters()"
-    aria-label="Filtros del historial"
-  >
-    <div class="filters__head">
-      <h2 class="filters__title">
-        <span class="filters__icon" aria-hidden="true">
-          <app-ui-icon name="search" [size]="16" />
-        </span>
-        <span>Filtrar historial</span>
-      </h2>
-
-      <span class="filters__count">
-        {{ visibleRequests().length }} de {{ totalRequests() }} solicitudes
+<section
+  class="filters"
+  [class.filters--active]="hasActiveFilters()"
+  aria-label="Filtros de solicitudes"
+>
+  <div class="filters__head">
+    <h2 class="filters__title">
+      <span class="filters__icon" aria-hidden="true">
+        <app-ui-icon name="search" [size]="16" />
       </span>
+      <span>Filtrar solicitudes</span>
+    </h2>
 
-      @if (hasActiveFilters()) {
-        <button type="button" class="filters__clear" (click)="clearFilters()">
-          <app-ui-icon name="x" [size]="14" />
-          <span>Limpiar filtros</span>
-        </button>
-      }
-    </div>
+    <span class="filters__count">
+      {{ visibleRequests().length }} de {{ totalRequests() }} solicitudes
+    </span>
 
-    <div class="filters__grid">
-      @if (cycles().length) {
-        <app-ui-form-field class="filters__field" label="Ciclo" inputId="cycle-filter">
-          <span class="ui-affix">
-            <app-ui-icon name="history" [size]="18" />
-          </span>
-          <select
-            id="cycle-filter"
-            class="ui-select"
-            [value]="selectedCycle()"
-            (change)="setCycleFilter($event)"
-          >
-            <option [value]="allCycles">Todos los ciclos</option>
-            @for (cycle of cycles(); track cycle) {
-              <option [value]="cycle">{{ cycle }}</option>
-            }
-          </select>
-          <span class="ui-affix">
-            <app-ui-icon name="chevron-down" [size]="18" />
-          </span>
-        </app-ui-form-field>
-      }
+    @if (hasActiveFilters()) {
+      <button type="button" class="filters__clear" (click)="clearFilters()">
+        <app-ui-icon name="x" [size]="14" />
+        <span>Limpiar filtros</span>
+      </button>
+    }
+  </div>
 
+  <div class="filters__grid">
+    <app-ui-form-field class="filters__field" label="Tipo de solicitud" inputId="kind-filter">
+      <span class="ui-affix">
+        <app-ui-icon name="clipboard" [size]="18" />
+      </span>
+      <select
+        id="kind-filter"
+        class="ui-select"
+        [value]="kindFilter()"
+        (change)="setKindFilter($event)"
+      >
+        @for (option of kinds; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+      <span class="ui-affix">
+        <app-ui-icon name="chevron-down" [size]="18" />
+      </span>
+    </app-ui-form-field>
+
+    @if (showCycleFilter()) {
+      <app-ui-form-field class="filters__field" label="Ciclo" inputId="cycle-filter">
+        <span class="ui-affix">
+          <app-ui-icon name="history" [size]="18" />
+        </span>
+        <select
+          id="cycle-filter"
+          class="ui-select"
+          [value]="selectedCycle()"
+          (change)="setCycleFilter($event)"
+        >
+          <option [value]="allCycles">Todos los ciclos</option>
+          @for (cycle of cycles(); track cycle) {
+            <option [value]="cycle">{{ cycle }}</option>
+          }
+        </select>
+        <span class="ui-affix">
+          <app-ui-icon name="chevron-down" [size]="18" />
+        </span>
+      </app-ui-form-field>
+    }
+
+    @if (view() === 'historial') {
       <app-ui-form-field class="filters__field" label="Orden por fecha" inputId="date-order">
         <span class="ui-affix">
           <app-ui-icon name="calendar" [size]="18" />
@@ -121,9 +141,9 @@
           <app-ui-icon name="chevron-down" [size]="18" />
         </span>
       </app-ui-form-field>
-    </div>
-  </section>
-}
+    }
+  </div>
+</section>
 
 @if (isLoading()) {
   <app-ui-card>
@@ -143,14 +163,18 @@
   </app-ui-card>
 } @else if (visibleRequests().length) {
   <div class="requests">
-    @for (request of visibleRequests(); track request.idRequest) {
-      <app-request-card
-        [request]="request"
-        [actionable]="true"
-        [currentCycle]="currentCycleName()"
-        [resubmitting]="resubmittingId() === request.idRequest"
-        (resubmit)="askResubmit($event)"
-      />
+    @for (item of visibleRequests(); track item.key) {
+      @if (item.kind === 'estacionamiento') {
+        <app-request-card
+          [request]="item.parking"
+          [actionable]="true"
+          [currentCycle]="currentCycleName()"
+          [resubmitting]="resubmittingId() === item.parking.idRequest"
+          (resubmit)="askResubmit($event)"
+        />
+      } @else {
+        <app-unassignment-request-card [request]="item.unassignment" />
+      }
     }
   </div>
 } @else {
@@ -163,7 +187,7 @@
       @if (filteredOutByCycle()) {
         <h2 class="empty__title">No hay solicitudes en este ciclo</h2>
         <p class="empty__description">Elige «Todos los ciclos» para ver el historial completo.</p>
-      } @else if (requests().length) {
+      } @else if (items().length) {
         <h2 class="empty__title">No hay solicitudes en esta vista</h2>
         <p class="empty__description">
           Revisa el historial para ver tus solicitudes de ciclos anteriores.
