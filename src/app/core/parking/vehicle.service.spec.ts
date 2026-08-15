@@ -17,19 +17,18 @@ const VEHICLE_LIST: VehicleDetailList = {
       numberPlate: 'ABC-123',
       idVehicleType: 1,
       vehicleType: 'Automóvil',
-      status: 'ACTIVE',
+      status: 'ASSIGNED',
     },
     {
       idVehicle: 2,
       numberPlate: 'XYZ-456',
       idVehicleType: 1,
       vehicleType: 'Automóvil',
-      status: 'DISABLED',
+      status: 'ASSIGNED',
     },
   ],
   assignedVehicles: 2,
-  activeVehicles: 1,
-  maxActiveVehicles: 5,
+  maxAssignedVehicles: 5,
 };
 
 describe('VehicleService', () => {
@@ -78,32 +77,31 @@ describe('VehicleService', () => {
     request.flush(VEHICLE_LIST);
   });
 
-  it('expone los vehículos con su contador de activos y el máximo', async () => {
+  it('expone los vehículos con su contador de asignados y el máximo', async () => {
     await loadVehicles();
 
     expect(service.vehicles().length).toBe(2);
-    expect(service.assignedVehicles()).toBe(2);
-    expect(service.activeVehicleCount()).toBe(1);
-    expect(service.maxActiveVehicles()).toBe(5);
+    expect(service.assignedVehicleCount()).toBe(2);
+    expect(service.maxAssignedVehicles()).toBe(5);
     expect(service.hasReachedLimit()).toBe(false);
   });
 
-  it('separa los vehículos activos de los deshabilitados', async () => {
+  it('solo expone vehículos asignados', async () => {
     await loadVehicles();
 
-    expect(service.activeVehicles().map((vehicle) => vehicle.numberPlate)).toEqual(['ABC-123']);
+    expect(service.vehicles().every((vehicle) => vehicle.status === 'ASSIGNED')).toBe(true);
   });
 
-  it('marca el límite alcanzado cuando los activos igualan al máximo', async () => {
-    await loadVehicles({ ...VEHICLE_LIST, activeVehicles: 5, maxActiveVehicles: 5 });
+  it('marca el límite alcanzado cuando los asignados igualan al máximo', async () => {
+    await loadVehicles({ ...VEHICLE_LIST, assignedVehicles: 5, maxAssignedVehicles: 5 });
 
     expect(service.hasReachedLimit()).toBe(true);
   });
 
-  it('no cuenta los vehículos deshabilitados para el límite de activos', async () => {
-    await loadVehicles({ ...VEHICLE_LIST, assignedVehicles: 8, activeVehicles: 4 });
+  it('los vehículos desasignados no cuentan para el límite', async () => {
+    await loadVehicles({ ...VEHICLE_LIST, assignedVehicles: 4, maxAssignedVehicles: 5 });
 
-    expect(service.activeVehicleCount()).toBe(4);
+    expect(service.assignedVehicleCount()).toBe(4);
     expect(service.hasReachedLimit()).toBe(false);
   });
 
@@ -121,30 +119,7 @@ describe('VehicleService', () => {
     httpTesting.expectOne(`${VEHICLES_URL}/me`).flush(VEHICLE_LIST);
   });
 
-  it('deshabilita un vehículo con PATCH sobre su identificador', async () => {
-    await loadVehicles();
-
-    service.setAvailability(1, false).subscribe();
-
-    const request = httpTesting.expectOne(`${VEHICLES_URL}/1`);
-    expect(request.request.method).toBe('PATCH');
-    expect(request.request.body).toEqual({ active: false });
-    request.flush({ ...VEHICLE_LIST.vehicles[0], active: false });
-
-    await nextTurn();
-    httpTesting.expectOne(`${VEHICLES_URL}/me`).flush(VEHICLE_LIST);
-  });
-
-  it('habilita un vehículo con PATCH sobre su identificador', async () => {
-    await loadVehicles();
-
-    service.setAvailability(2, true).subscribe();
-
-    const request = httpTesting.expectOne(`${VEHICLES_URL}/2`);
-    expect(request.request.body).toEqual({ active: true });
-    request.flush({ ...VEHICLE_LIST.vehicles[1], active: true });
-
-    await nextTurn();
-    httpTesting.expectOne(`${VEHICLES_URL}/me`).flush(VEHICLE_LIST);
+  it('no expone ninguna operación de disponibilidad del vehículo', () => {
+    expect('setAvailability' in service).toBe(false);
   });
 });

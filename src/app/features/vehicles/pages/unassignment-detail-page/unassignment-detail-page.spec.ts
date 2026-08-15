@@ -3,7 +3,9 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 import { VehicleUnassignmentRequestDetail } from '../../../../core/parking/models/vehicle.model';
+import { ParkingReviewService } from '../../../../core/parking/parking-review.service';
 import { VehicleUnassignmentService } from '../../../../core/parking/vehicle-unassignment.service';
 import { UnassignmentDetailPage } from './unassignment-detail-page';
 
@@ -37,7 +39,9 @@ function unassignment(status: string, observation: string): VehicleUnassignmentR
 describe('UnassignmentDetailPage', () => {
   let fixture: ComponentFixture<UnassignmentDetailPage>;
   let myRequests: WritableSignal<VehicleUnassignmentRequestDetail[]>;
+  let acceptorRequests: WritableSignal<VehicleUnassignmentRequestDetail[]>;
   let isLoading: WritableSignal<boolean>;
+  let respond: ReturnType<typeof vi.fn>;
 
   function host(): HTMLElement {
     return fixture.nativeElement as HTMLElement;
@@ -53,23 +57,50 @@ describe('UnassignmentDetailPage', () => {
     fixture.detectChanges();
   }
 
+  function buildReview(id = '7'): void {
+    fixture = TestBed.createComponent(UnassignmentDetailPage);
+    fixture.componentRef.setInput('unassignmentId', id);
+    fixture.componentRef.setInput('mode', 'review');
+    fixture.detectChanges();
+  }
+
   beforeEach(() => {
     myRequests = signal([unassignment('RECHAZADO', 'El vehículo tiene una multa pendiente.')]);
+    acceptorRequests = signal([unassignment('EN_REVISION', 'Asignada a Personal SAE.')]);
     isLoading = signal(false);
+    respond = vi.fn(() => of(unassignment('APROBADO', 'Desasignación aprobada.')));
 
     TestBed.configureTestingModule({
       imports: [UnassignmentDetailPage],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideRouter([]),
+        provideRouter([{ path: '**', children: [] }]),
         {
           provide: VehicleUnassignmentService,
           useValue: {
             myRequests,
+            acceptorRequests,
             isLoading,
             hasFailed: signal(false),
+            acceptorIsLoading: signal(false),
+            acceptorHasFailed: signal(false),
+            respond,
             reload: () => undefined,
+            reloadAcceptor: () => undefined,
+          },
+        },
+        {
+          provide: ParkingReviewService,
+          useValue: {
+            applicantProfile: signal({
+              dni: '70123456',
+              institutionalEmail: 'u23201703@utp.edu.pe',
+              career: 'Ingeniería de Sistemas',
+              campus: { idCampus: 1, nameCampus: 'Campus Central' },
+            }),
+            applicantFailed: signal(false),
+            selectApplicant: () => undefined,
           },
         },
       ],
@@ -120,5 +151,85 @@ describe('UnassignmentDetailPage', () => {
     build();
 
     expect(text()).toContain('Cargando la solicitud');
+  });
+
+  it('no ofrece acciones de revisión al solicitante', () => {
+    build();
+
+    expect(host().querySelector('.actions')).toBeNull();
+    expect(text()).not.toContain('Solicitante');
+  });
+
+  it('en modo revisión lee la bandeja del aceptante', () => {
+    buildReview();
+
+    expect(text()).toContain('Desasignación #7');
+    expect(text()).toContain('Revisa la información del solicitante');
+  });
+
+  it('en modo revisión muestra los datos del solicitante', () => {
+    buildReview();
+
+    expect(text()).toContain('Juan Pérez');
+    expect(text()).toContain('U23201703');
+    expect(text()).toContain('70123456');
+    expect(text()).toContain('Campus Central');
+  });
+
+  it('en modo revisión ofrece aceptar y rechazar', () => {
+    buildReview();
+
+    expect(text()).toContain('Aceptar desasignación');
+    expect(text()).toContain('Rechazar desasignación');
+  });
+
+  it('pide confirmación antes de aceptar', () => {
+    buildReview();
+
+    const accept = [...host().querySelectorAll<HTMLButtonElement>('.actions button')][0];
+    accept.click();
+    fixture.detectChanges();
+
+    expect(text()).toContain('¿Aceptar la desasignación?');
+    expect(respond).not.toHaveBeenCalled();
+  });
+
+  it('acepta la desasignación al confirmar', () => {
+    buildReview();
+
+    [...host().querySelectorAll<HTMLButtonElement>('.actions button')][0].click();
+    fixture.detectChanges();
+
+    const dialogButtons = [
+      ...host().querySelectorAll<HTMLButtonElement>('.ui-dialog__actions button'),
+    ];
+    dialogButtons[dialogButtons.length - 1].click();
+    fixture.detectChanges();
+
+    expect(respond).toHaveBeenCalledWith(7, { approved: true });
+  });
+
+  it('exige motivo para rechazar', () => {
+    buildReview();
+
+    [...host().querySelectorAll<HTMLButtonElement>('.actions button')][1].click();
+    fixture.detectChanges();
+
+    const dialogButtons = [
+      ...host().querySelectorAll<HTMLButtonElement>('.ui-dialog__actions button'),
+    ];
+    dialogButtons[dialogButtons.length - 1].click();
+    fixture.detectChanges();
+
+    expect(respond).not.toHaveBeenCalled();
+    expect(text()).toContain('Indica el motivo del rechazo.');
+  });
+
+  it('no permite responder una solicitud ya revisada', () => {
+    acceptorRequests.set([unassignment('APROBADO', 'Desasignación aprobada.')]);
+    buildReview();
+
+    expect(host().querySelector('.actions')).toBeNull();
+    expect(text()).toContain('ya fue respondida y no admite cambios');
   });
 });

@@ -14,6 +14,8 @@ interface NavItem {
   route: string;
   exact?: boolean;
   queryParams?: Params;
+  /** Etiqueta corta para el riel contraído, donde no cabe la etiqueta completa. */
+  shortLabel?: string;
 }
 
 const HOME_ITEM: NavItem = { label: 'Inicio', icon: 'home', route: '/home' };
@@ -32,10 +34,23 @@ const APPLICANT_ITEMS: NavItem[] = [
 ];
 
 const SAE_ITEMS: NavItem[] = [
-  { label: 'Solicitudes pendientes', icon: 'inbox', route: '/revisiones', exact: true },
-  { label: 'Gestión de vehículos', icon: 'car', route: '/revisiones-vehiculos', exact: true },
   {
-    label: 'Revisadas',
+    label: 'Ingreso al estacionamiento',
+    shortLabel: 'Ingreso',
+    icon: 'inbox',
+    route: '/revisiones',
+    exact: true,
+  },
+  {
+    label: 'Desasignación de vehículos',
+    shortLabel: 'Vehículos',
+    icon: 'car',
+    route: '/revisiones-vehiculos',
+    exact: true,
+  },
+  {
+    label: 'Historial de revisiones',
+    shortLabel: 'Historial',
     icon: 'history',
     route: '/revisiones',
     exact: true,
@@ -71,6 +86,10 @@ export class MainLayout {
     ...(this.access.isApplicant() ? APPLICANT_ITEMS : []),
     ...(this.access.isSae() ? SAE_ITEMS : []),
   ]);
+
+  navLabel(item: NavItem): string {
+    return this.sidebarExpanded() ? item.label : (item.shortLabel ?? item.label);
+  }
 
   toggleSidebar(): void {
     this.sidebarExpanded.update((expanded) => !expanded);

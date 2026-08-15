@@ -9,7 +9,6 @@ export type VehicleAccessStatus =
   | 'in-review'
   | 'rejected'
   | 'no-request'
-  | 'not-active'
   | 'unknown';
 
 export interface VehicleAccess {
@@ -23,7 +22,6 @@ const ACCESS_TONES: Readonly<Record<VehicleAccessStatus, BadgeTone>> = {
   'in-review': 'warning',
   rejected: 'danger',
   'no-request': 'neutral',
-  'not-active': 'neutral',
   unknown: 'neutral',
 };
 
@@ -32,7 +30,6 @@ const ACCESS_ICONS: Readonly<Record<VehicleAccessStatus, IconName>> = {
   'in-review': 'clock',
   rejected: 'alert-triangle',
   'no-request': 'info',
-  'not-active': 'alert-triangle',
   unknown: 'help-circle',
 };
 
@@ -78,9 +75,7 @@ export function vehicleAccessFor(
 
   switch (requestOutcome(request)) {
     case 'approved':
-      return vehicle.status === 'ACTIVE'
-        ? { status: 'allowed', cycleName, request }
-        : { status: 'not-active', cycleName, request };
+      return { status: 'allowed', cycleName, request };
     case 'rejected':
       return { status: 'rejected', cycleName, request };
     default:

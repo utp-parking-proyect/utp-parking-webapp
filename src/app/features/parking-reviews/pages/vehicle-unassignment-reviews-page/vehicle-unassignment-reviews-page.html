@@ -1,43 +1,35 @@
 <header class="page-header">
   <div>
-    <h1 class="page-header__title">Solicitudes de gestión de vehículos</h1>
+    <h1 class="page-header__title">Desasignación de vehículos</h1>
     <p class="page-header__subtitle">
-      Revisa las solicitudes de desasignación enviadas por los usuarios. Al aprobarlas, el vehículo
-      deja de pertenecer al solicitante y conserva su historial de solicitudes.
+      Solicitudes para dejar de usar un vehículo, asignadas para tu revisión. Al aprobarlas, el
+      vehículo deja de pertenecer al solicitante y conserva su historial de solicitudes.
     </p>
   </div>
+
+  <app-ui-button variant="secondary" size="lg" [disabled]="isLoading()" (click)="reload()">
+    <app-ui-icon name="refresh" [size]="18" />
+    Actualizar
+  </app-ui-button>
 </header>
 
-<nav class="views" aria-label="Vistas de solicitudes de desasignación">
-  <button
-    type="button"
-    class="views__item"
-    [class.views__item--active]="view() === 'pendientes'"
-    (click)="setView('pendientes')"
-  >
-    Pendientes
-    <span class="views__count">{{ pendingRequests().length }}</span>
-  </button>
-  <button
-    type="button"
-    class="views__item"
-    [class.views__item--active]="view() === 'revisadas'"
-    (click)="setView('revisadas')"
-  >
-    Revisadas
-    <span class="views__count">{{ reviewedRequests().length }}</span>
-  </button>
-</nav>
+<a
+  class="crosslink"
+  routerLink="/revisiones"
+  [queryParams]="{ vista: 'revisadas', tipo: 'unassignment' }"
+>
+  <span class="crosslink__icon" aria-hidden="true">
+    <app-ui-icon name="history" [size]="18" />
+  </span>
+  <span class="crosslink__text">
+    Consulta las desasignaciones que ya respondiste en el historial de revisiones.
+  </span>
+  <app-ui-icon name="chevron-right" [size]="16" />
+</a>
 
-@if (successMessage(); as message) {
+@if (feedback(); as message) {
   <div class="feedback">
-    <app-ui-alert tone="success" (closed)="successMessage.set(null)">{{ message }}</app-ui-alert>
-  </div>
-}
-
-@if (errorMessage(); as message) {
-  <div class="feedback">
-    <app-ui-alert tone="danger" (closed)="errorMessage.set(null)">{{ message }}</app-ui-alert>
+    <app-ui-alert tone="success">{{ message }}</app-ui-alert>
   </div>
 }
 
@@ -57,9 +49,9 @@
       <app-ui-button variant="secondary" (click)="reload()">Reintentar</app-ui-button>
     </div>
   </app-ui-card>
-} @else if (visibleRequests().length) {
+} @else if (pendingRequests().length) {
   <div class="requests">
-    @for (request of visibleRequests(); track request.idUnassignmentRequest) {
+    @for (request of pendingRequests(); track request.idUnassignmentRequest) {
       <app-ui-card>
         <div class="request">
           <header class="request__head">
@@ -72,7 +64,7 @@
               <p class="request__number">N.° {{ request.idUnassignmentRequest }}</p>
             </div>
 
-            <app-ui-badge [tone]="view() === 'pendientes' ? 'warning' : 'neutral'">
+            <app-ui-badge [tone]="statusTone(request)">
               {{ request.status | statusLabel }}
             </app-ui-badge>
           </header>
@@ -101,24 +93,12 @@
             <p class="request__reason-text">{{ request.reason }}</p>
           </div>
 
-          @if (view() === 'pendientes') {
-            <div class="request__actions">
-              <app-ui-button [disabled]="responding()" (click)="askApprove(request)">
-                Aceptar
-              </app-ui-button>
-              <app-ui-button
-                variant="danger"
-                [disabled]="responding()"
-                (click)="askReject(request)"
-              >
-                Rechazar
-              </app-ui-button>
-            </div>
-          } @else if (request.workflow.length) {
-            <p class="request__observation">
-              {{ request.workflow[request.workflow.length - 1].observation }}
-            </p>
-          }
+          <div class="request__actions">
+            <app-ui-button [routerLink]="['/revisiones-vehiculos', request.idUnassignmentRequest]">
+              Revisar solicitud
+              <app-ui-icon name="chevron-right" [size]="16" />
+            </app-ui-button>
+          </div>
         </div>
       </app-ui-card>
     }
@@ -129,98 +109,10 @@
       <span class="empty__icon">
         <app-ui-icon name="inbox" [size]="26" />
       </span>
-      <h2 class="empty__title">
-        @if (view() === 'pendientes') {
-          No tienes solicitudes de desasignación pendientes
-        } @else {
-          Aún no has revisado solicitudes de desasignación
-        }
-      </h2>
+      <h2 class="empty__title">No tienes solicitudes de desasignación pendientes</h2>
       <p class="empty__description">
         Las solicitudes que los usuarios envíen para dejar de usar sus vehículos aparecerán aquí.
       </p>
     </div>
   </app-ui-card>
-}
-
-@if (approveTarget(); as request) {
-  <app-ui-dialog
-    title="¿Aceptar la desasignación?"
-    description="El vehículo dejará de pertenecer al solicitante y ya no contará entre sus vehículos. Sus solicitudes anteriores y su historial se conservan."
-    [busy]="responding()"
-    (closed)="cancelApprove()"
-  >
-    <dl class="dialog__summary">
-      <div>
-        <dt>Solicitante</dt>
-        <dd>{{ applicantName(request) }}</dd>
-      </div>
-      <div>
-        <dt>Placa</dt>
-        <dd>{{ request.vehicle.numberPlate }}</dd>
-      </div>
-    </dl>
-
-    <div dialogActions class="dialog__buttons">
-      <app-ui-button variant="secondary" [disabled]="responding()" (click)="cancelApprove()">
-        Cancelar
-      </app-ui-button>
-      <app-ui-button [loading]="responding()" [disabled]="responding()" (click)="confirmApprove()">
-        {{ responding() ? 'Procesando…' : 'Aceptar' }}
-      </app-ui-button>
-    </div>
-  </app-ui-dialog>
-}
-
-@if (rejectTarget(); as request) {
-  <app-ui-dialog
-    title="Rechazar la desasignación"
-    description="El vehículo seguirá perteneciendo al solicitante. Indica el motivo del rechazo para que pueda verlo."
-    tone="danger"
-    [busy]="responding()"
-    (closed)="cancelReject()"
-  >
-    <dl class="dialog__summary">
-      <div>
-        <dt>Solicitante</dt>
-        <dd>{{ applicantName(request) }}</dd>
-      </div>
-      <div>
-        <dt>Placa</dt>
-        <dd>{{ request.vehicle.numberPlate }}</dd>
-      </div>
-    </dl>
-
-    <form class="dialog__form" [formGroup]="rejectForm" (ngSubmit)="confirmReject()" novalidate>
-      <app-ui-form-field
-        label="Motivo del rechazo"
-        inputId="unassignment-rejection"
-        hint="Máximo 500 caracteres."
-        [error]="commentError()"
-      >
-        <textarea
-          id="unassignment-rejection"
-          class="ui-input"
-          rows="3"
-          maxlength="500"
-          placeholder="El vehículo tiene una solicitud vigente…"
-          formControlName="comment"
-        ></textarea>
-      </app-ui-form-field>
-    </form>
-
-    <div dialogActions class="dialog__buttons">
-      <app-ui-button variant="secondary" [disabled]="responding()" (click)="cancelReject()">
-        Cancelar
-      </app-ui-button>
-      <app-ui-button
-        variant="danger"
-        [loading]="responding()"
-        [disabled]="responding()"
-        (click)="confirmReject()"
-      >
-        {{ responding() ? 'Procesando…' : 'Rechazar' }}
-      </app-ui-button>
-    </div>
-  </app-ui-dialog>
 }

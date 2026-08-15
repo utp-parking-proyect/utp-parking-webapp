@@ -2,6 +2,7 @@ import { HttpClient, httpResource } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { injectRoleAccess } from '../auth/role-access';
 import { CurrentUserService } from '../portal/current-user.service';
 import { UserProfile } from '../portal/models/user-profile.model';
 import { USERS_PATH } from '../portal/portal.constants';
@@ -28,11 +29,15 @@ export class ParkingReviewService {
   private readonly http = inject(HttpClient);
   private readonly currentUserService = inject(CurrentUserService);
 
+  private readonly access = injectRoleAccess();
+
   private readonly acceptorId = this.currentUserService.userId;
 
   private readonly resource = httpResource<ParkingRequestInformationList>(() => {
     const acceptorId = this.acceptorId();
-    return acceptorId === null ? undefined : `${REQUESTS_URL}/acceptor/${acceptorId}`;
+    return this.access.isSae() && acceptorId !== null
+      ? `${REQUESTS_URL}/acceptor/${acceptorId}`
+      : undefined;
   });
 
   private readonly selectedApplicantId = signal<number | null>(null);

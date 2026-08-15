@@ -107,11 +107,6 @@ export class ReviewDetailPage {
     comment: ['', [Validators.required, Validators.maxLength(500)]],
   });
 
-  protected readonly commentError = computed(() =>
-    this.rejectionForm.controls.comment.invalid && this.rejectionForm.controls.comment.touched
-      ? 'Indica el motivo del rechazo.'
-      : null,
-  );
 
   constructor() {
     effect(() => {
@@ -126,6 +121,11 @@ export class ReviewDetailPage {
 
   entryDate(entry: WorkflowEntry): Date | null {
     return toDate(entry.dateStatusChange);
+  }
+
+  commentError(): string | null {
+    const control = this.rejectionForm.controls.comment;
+    return control.invalid && control.touched ? 'Indica el motivo del rechazo.' : null;
   }
 
   openAccept(): void {

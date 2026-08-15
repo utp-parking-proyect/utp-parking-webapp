@@ -15,13 +15,13 @@ import { VehicleUnassignmentService } from '../../../../core/parking/vehicle-una
 import { CurrentCycleService } from '../../../../core/portal/current-cycle.service';
 import { MyVehiclesPage } from './my-vehicles-page';
 
-function vehicle(idVehicle: number, numberPlate: string, active: boolean): VehicleDetail {
+function vehicle(idVehicle: number, numberPlate: string): VehicleDetail {
   return {
     idVehicle,
     numberPlate,
     idVehicleType: 1,
     vehicleType: 'Automóvil',
-    status: active ? 'ACTIVE' : 'DISABLED',
+    status: 'ASSIGNED',
   };
 }
 
@@ -74,14 +74,13 @@ function unassignment(
 describe('MyVehiclesPage', () => {
   let fixture: ComponentFixture<MyVehiclesPage>;
   let vehicles: WritableSignal<VehicleDetail[]>;
-  let activeVehicleCount: WritableSignal<number>;
+  let assignedVehicleCount: WritableSignal<number>;
   let hasReachedLimit: WritableSignal<boolean>;
   let isLoading: WritableSignal<boolean>;
   let hasFailed: WritableSignal<boolean>;
   let requests: WritableSignal<ParkingRequestInformation[]>;
   let requestsFailed: WritableSignal<boolean>;
   let cycleName: WritableSignal<string | null>;
-  let setAvailability: ReturnType<typeof vi.fn>;
   let requestUnassignment: ReturnType<typeof vi.fn>;
   let unassignmentByVehicle: WritableSignal<Map<number, VehicleUnassignmentRequestDetail>>;
   let unassignedVehicles: WritableSignal<VehicleUnassignmentRequestDetail[]>;
@@ -102,15 +101,12 @@ describe('MyVehiclesPage', () => {
     return host().querySelector<HTMLButtonElement>('.page-header button')!;
   }
 
-  function clickAvailability(index: number): void {
-    cards()[index].querySelector<HTMLButtonElement>('.vehicle__actions button')!.click();
-    fixture.detectChanges();
+  function actionButtons(index: number): HTMLButtonElement[] {
+    return Array.from(cards()[index].querySelectorAll<HTMLButtonElement>('.vehicle__actions button'));
   }
 
   function unassignButton(index: number): HTMLButtonElement {
-    const buttons = Array.from(
-      cards()[index].querySelectorAll<HTMLButtonElement>('.vehicle__actions button'),
-    );
+    const buttons = actionButtons(index);
     return buttons[buttons.length - 1];
   }
 
@@ -122,15 +118,14 @@ describe('MyVehiclesPage', () => {
   }
 
   beforeEach(() => {
-    vehicles = signal<VehicleDetail[]>([vehicle(1, 'ABC-123', true), vehicle(2, 'XYZ-456', false)]);
-    activeVehicleCount = signal(1);
+    vehicles = signal<VehicleDetail[]>([vehicle(1, 'ABC-123'), vehicle(2, 'XYZ-456')]);
+    assignedVehicleCount = signal(2);
     hasReachedLimit = signal(false);
     isLoading = signal(false);
     hasFailed = signal(false);
     requests = signal<ParkingRequestInformation[]>([]);
     requestsFailed = signal(false);
     cycleName = signal<string | null>('2026-1');
-    setAvailability = vi.fn(() => of(vehicle(1, 'ABC-123', false)));
     unassignmentByVehicle = signal(new Map<number, VehicleUnassignmentRequestDetail>());
     unassignedVehicles = signal<VehicleUnassignmentRequestDetail[]>([]);
     requestUnassignment = vi.fn(() => of(unassignment(1, 'REGISTRADO')));
@@ -145,13 +140,12 @@ describe('MyVehiclesPage', () => {
           provide: VehicleService,
           useValue: {
             vehicles,
-            activeVehicleCount,
-            maxActiveVehicles: signal(5),
+            assignedVehicleCount,
+            maxAssignedVehicles: signal(5),
             hasReachedLimit,
             isLoading,
             hasFailed,
-            register: () => of(vehicle(3, 'DEF-789', true)),
-            setAvailability,
+            register: () => of(vehicle(3, 'DEF-789')),
             reload: () => undefined,
           },
         },
@@ -192,80 +186,51 @@ describe('MyVehiclesPage', () => {
   afterEach(() => TestBed.resetTestingModule());
 
   it('muestra el contador de vehículos con datos reales', () => {
-    expect(text()).toContain('Tienes 1 de 5 vehículos activos');
+    expect(text()).toContain('Tienes 2 de 5 vehículos asignados');
   });
 
-  it('lista los vehículos activos y deshabilitados con su estado', () => {
+  it('lista los vehículos asignados con su estado', () => {
     expect(cards().length).toBe(2);
     expect(cards()[0].textContent).toContain('ABC-123');
-    expect(cards()[0].textContent).toContain('Activo');
+    expect(cards()[0].textContent).toContain('Asignado');
     expect(cards()[1].textContent).toContain('XYZ-456');
-    expect(cards()[1].textContent).toContain('Deshabilitado');
+    expect(cards()[1].textContent).toContain('Asignado');
   });
 
-  it('ofrece deshabilitar un vehículo activo y habilitar uno deshabilitado', () => {
-    expect(cards()[0].querySelector('button')!.textContent).toContain('Deshabilitar');
-    expect(cards()[1].querySelector('button')!.textContent).toContain('Habilitar');
+  it('no ofrece habilitar ni deshabilitar vehículos', () => {
+    expect(text()).not.toContain('Deshabilitar');
+    expect(text()).not.toContain('Habilitar');
+    expect(text()).not.toContain('Deshabilitado');
   });
 
-  it('pide confirmación antes de deshabilitar', () => {
-    clickAvailability(0);
-
-    expect(text()).toContain('¿Deseas deshabilitar este vehículo?');
-    expect(setAvailability).not.toHaveBeenCalled();
-  });
-
-  it('deshabilita el vehículo al confirmar', () => {
-    clickAvailability(0);
-    dialogConfirm().click();
-    fixture.detectChanges();
-
-    expect(setAvailability).toHaveBeenCalledWith(1, false);
-    expect(text()).toContain('El vehículo ABC-123 fue deshabilitado.');
-  });
-
-  it('habilita el vehículo al confirmar', () => {
-    clickAvailability(1);
-    dialogConfirm().click();
-    fixture.detectChanges();
-
-    expect(setAvailability).toHaveBeenCalledWith(2, true);
-    expect(text()).toContain('El vehículo XYZ-456 fue habilitado.');
+  it('la única acción sobre el vehículo es solicitar su desasignación', () => {
+    expect(actionButtons(0).length).toBe(1);
+    expect(actionButtons(0)[0].textContent).toContain('Solicitar desasignación');
   });
 
   it('deshabilita el botón de agregar cuando se alcanzó el máximo', () => {
     hasReachedLimit.set(true);
-    activeVehicleCount.set(5);
+    assignedVehicleCount.set(5);
     fixture.detectChanges();
 
     expect(addVehicleButton().disabled).toBe(true);
-    expect(text()).toContain('Has alcanzado el máximo de 5 vehículos activos');
+    expect(text()).toContain('Has alcanzado el máximo de 5 vehículos asignados');
   });
 
-  it('no permite habilitar un vehículo cuando ya hay 5 activos', () => {
+  it('propone desasignar un vehículo para liberar espacio al alcanzar el máximo', () => {
     hasReachedLimit.set(true);
-    activeVehicleCount.set(5);
+    assignedVehicleCount.set(5);
     fixture.detectChanges();
 
-    const enableButton = cards()[1].querySelector<HTMLButtonElement>('.vehicle__actions button')!;
-
-    expect(enableButton.disabled).toBe(true);
-    expect(cards()[1].textContent).toContain(
-      'Ya tienes 5 vehículos activos. Deshabilita otro vehículo antes de habilitar este.',
-    );
-    expect(setAvailability).not.toHaveBeenCalled();
+    expect(text()).toContain('Solicita la desasignación de uno para liberar espacio');
   });
 
-  it('sigue permitiendo deshabilitar cuando ya hay 5 activos', () => {
-    hasReachedLimit.set(true);
-    activeVehicleCount.set(5);
+  it('permite registrar otro vehículo cuando el límite ya no está alcanzado', () => {
+    hasReachedLimit.set(false);
+    assignedVehicleCount.set(4);
     fixture.detectChanges();
 
-    clickAvailability(0);
-    dialogConfirm().click();
-    fixture.detectChanges();
-
-    expect(setAvailability).toHaveBeenCalledWith(1, false);
+    expect(addVehicleButton().disabled).toBe(false);
   });
 
   it('ofrece solicitar la desasignación de un vehículo propio', () => {
@@ -423,16 +388,6 @@ describe('MyVehiclesPage', () => {
     expect(cards()[0].textContent).toContain('fue rechazada');
   });
 
-  it('no permite el ingreso de un vehículo deshabilitado con solicitud aprobada', () => {
-    requests.set([request(1, 'XYZ-456', '2026-1', 'APROBADO')]);
-    fixture.detectChanges();
-
-    expect(cards()[1].textContent).toContain('Deshabilitado');
-    expect(cards()[1].textContent).toContain('Ingreso no permitido');
-    expect(cards()[1].textContent).not.toContain('Ingreso permitido');
-    expect(cards()[1].textContent).toContain('este vehículo está deshabilitado');
-  });
-
   it('no afirma nada sobre el ingreso cuando no se conoce el ciclo vigente', () => {
     cycleName.set(null);
     requests.set([request(1, 'ABC-123', '2026-1', 'APROBADO')]);
@@ -451,7 +406,7 @@ describe('MyVehiclesPage', () => {
 
   it('invita a registrar un vehículo cuando no hay ninguno', () => {
     vehicles.set([]);
-    activeVehicleCount.set(0);
+    assignedVehicleCount.set(0);
     fixture.detectChanges();
 
     expect(text()).toContain('Aún no tienes vehículos registrados');

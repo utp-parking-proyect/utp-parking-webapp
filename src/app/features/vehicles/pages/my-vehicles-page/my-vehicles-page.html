@@ -4,9 +4,9 @@
     <p class="page-header__subtitle">
       Administra los vehículos con los que puedes solicitar el ingreso a los estacionamientos de la
       UTP.
-      @if (maxActiveVehicles(); as maxActiveVehicles) {
+      @if (maxAssignedVehicles(); as maxAssignedVehicles) {
         <span class="page-header__counter">
-          Tienes {{ activeVehicleCount() }} de {{ maxActiveVehicles }} vehículos activos.
+          Tienes {{ assignedVehicleCount() }} de {{ maxAssignedVehicles }} vehículos asignados.
         </span>
       }
     </p>
@@ -33,8 +33,9 @@
 @if (hasReachedLimit() && !isLoading()) {
   <div class="feedback">
     <app-ui-alert tone="info">
-      Has alcanzado el máximo de {{ maxActiveVehicles() }} vehículos activos. Deshabilita uno para
-      liberar espacio: seguirá registrado y conservará su historial de solicitudes.
+      Has alcanzado el máximo de {{ maxAssignedVehicles() }} vehículos asignados. Solicita la
+      desasignación de uno para liberar espacio: seguirá registrado y conservará su historial de
+      solicitudes.
     </app-ui-alert>
   </div>
 }
@@ -59,7 +60,7 @@
   <div class="vehicles">
     @for (vehicle of vehicles(); track vehicle.idVehicle) {
       <app-ui-card>
-        <div class="vehicle" [class.vehicle--inactive]="vehicle.status !== 'ACTIVE'">
+        <div class="vehicle">
           <header class="vehicle__head">
             <span class="vehicle__icon">
               <app-ui-icon [name]="iconFor(vehicle)" [size]="20" />
@@ -70,9 +71,7 @@
               <p class="vehicle__type">{{ vehicle.vehicleType }}</p>
             </div>
 
-            <app-ui-badge [tone]="vehicle.status === 'ACTIVE' ? 'success' : 'neutral'">
-              {{ vehicle.status === 'ACTIVE' ? 'Activo' : 'Deshabilitado' }}
-            </app-ui-badge>
+            <app-ui-badge tone="success">Asignado</app-ui-badge>
           </header>
 
           @if (accessFor(vehicle); as access) {
@@ -103,11 +102,6 @@
                       Tu solicitud del ciclo {{ access.cycleName }} fue rechazada. No se permite
                       usar este vehículo para ingresar.
                     }
-                    @case ('not-active') {
-                      Tu solicitud del ciclo {{ access.cycleName }} fue aprobada, pero este vehículo
-                      está deshabilitado. No se permite usarlo para ingresar hasta que lo vuelvas a
-                      habilitar.
-                    }
                     @case ('no-request') {
                       No tienes una solicitud aprobada en el ciclo {{ access.cycleName }}. No se
                       permite usar este vehículo para ingresar.
@@ -123,15 +117,7 @@
           }
 
           <p class="vehicle__description">
-            @if (vehicle.status === 'ACTIVE') {
-              Puedes seleccionarlo al registrar una nueva solicitud.
-            } @else if (canEnable(vehicle)) {
-              No podrás seleccionarlo en nuevas solicitudes hasta que lo habilites. Sus solicitudes
-              anteriores se mantienen en tu historial.
-            } @else {
-              Ya tienes {{ maxActiveVehicles() }} vehículos activos. Deshabilita otro vehículo antes
-              de habilitar este. Sus solicitudes anteriores se mantienen en tu historial.
-            }
+            Puedes seleccionarlo al registrar una nueva solicitud.
           </p>
 
           @if (hasOpenUnassignment(vehicle)) {
@@ -155,23 +141,9 @@
 
           <div class="vehicle__actions">
             <app-ui-button
-              [variant]="vehicle.status === 'ACTIVE' ? 'secondary' : 'primary'"
+              variant="secondary"
               [block]="true"
-              [loading]="updatingId() === vehicle.idVehicle"
-              [disabled]="updatingId() !== null || !canEnable(vehicle)"
-              (click)="askAvailabilityChange(vehicle)"
-            >
-              @if (updatingId() === vehicle.idVehicle) {
-                Actualizando…
-              } @else {
-                {{ vehicle.status === 'ACTIVE' ? 'Deshabilitar' : 'Habilitar' }}
-              }
-            </app-ui-button>
-
-            <app-ui-button
-              variant="ghost"
-              [block]="true"
-              [disabled]="updatingId() !== null || hasOpenUnassignment(vehicle)"
+              [disabled]="unassigning() || hasOpenUnassignment(vehicle)"
               (click)="askUnassignment(vehicle)"
             >
               @if (hasOpenUnassignment(vehicle)) {
@@ -294,53 +266,6 @@
       </app-ui-button>
       <app-ui-button [loading]="registering()" [disabled]="registering()" (click)="submit()">
         {{ registering() ? 'Registrando…' : 'Registrar vehículo' }}
-      </app-ui-button>
-    </div>
-  </app-ui-dialog>
-}
-
-@if (availabilityTarget(); as vehicle) {
-  <app-ui-dialog
-    [title]="
-      vehicle.status === 'ACTIVE'
-        ? '¿Deseas deshabilitar este vehículo?'
-        : '¿Deseas habilitar este vehículo?'
-    "
-    [description]="
-      vehicle.status === 'ACTIVE'
-        ? 'Ya no podrás seleccionarlo para nuevas solicitudes hasta que lo vuelvas a habilitar. Sus solicitudes y su historial se conservan.'
-        : 'Volverá a estar disponible para tus próximas solicitudes.'
-    "
-    [tone]="vehicle.status === 'ACTIVE' ? 'danger' : 'brand'"
-    [busy]="updatingId() !== null"
-    (closed)="cancelAvailabilityChange()"
-  >
-    <dl class="dialog__summary">
-      <div>
-        <dt>Vehículo</dt>
-        <dd>{{ vehicle.numberPlate }}</dd>
-      </div>
-      <div>
-        <dt>Tipo</dt>
-        <dd>{{ vehicle.vehicleType }}</dd>
-      </div>
-    </dl>
-
-    <div dialogActions class="dialog__buttons">
-      <app-ui-button
-        variant="secondary"
-        [disabled]="updatingId() !== null"
-        (click)="cancelAvailabilityChange()"
-      >
-        Cancelar
-      </app-ui-button>
-      <app-ui-button
-        [variant]="vehicle.status === 'ACTIVE' ? 'danger' : 'primary'"
-        [loading]="updatingId() !== null"
-        [disabled]="updatingId() !== null"
-        (click)="confirmAvailabilityChange()"
-      >
-        {{ vehicle.status === 'ACTIVE' ? 'Deshabilitar' : 'Habilitar' }}
       </app-ui-button>
     </div>
   </app-ui-dialog>

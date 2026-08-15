@@ -1,12 +1,23 @@
 <header class="page-header">
   <div>
-    <h1 class="page-header__title">Solicitudes pendientes</h1>
-    <p class="page-header__subtitle">
-      Solicitudes de ingreso al estacionamiento asignadas para tu revisión.
-      @if (currentCycleName(); as cycleName) {
-        <span class="page-header__cycle">Ciclo vigente: {{ cycleName }}</span>
-      }
-    </p>
+    @if (view() === 'revisadas') {
+      <h1 class="page-header__title">Historial de revisiones</h1>
+      <p class="page-header__subtitle">
+        Solicitudes de ingreso al estacionamiento y de desasignación de vehículos que ya
+        respondiste.
+        @if (currentCycleName(); as cycleName) {
+          <span class="page-header__cycle">Ciclo vigente: {{ cycleName }}</span>
+        }
+      </p>
+    } @else {
+      <h1 class="page-header__title">Ingreso al estacionamiento</h1>
+      <p class="page-header__subtitle">
+        Solicitudes de autorización de ingreso asignadas para tu revisión.
+        @if (currentCycleName(); as cycleName) {
+          <span class="page-header__cycle">Ciclo vigente: {{ cycleName }}</span>
+        }
+      </p>
+    }
   </div>
 
   <app-ui-button variant="secondary" size="lg" [disabled]="isLoading()" (click)="reload()">
@@ -21,7 +32,21 @@
   </div>
 }
 
-<nav class="views" aria-label="Filtrar solicitudes asignadas">
+@if (view() === 'pendientes' && pendingUnassignmentCount() > 0) {
+  <a class="crosslink" routerLink="/revisiones-vehiculos">
+    <span class="crosslink__icon" aria-hidden="true">
+      <app-ui-icon name="car" [size]="18" />
+    </span>
+    <span class="crosslink__text">
+      Tienes {{ pendingUnassignmentCount() }}
+      {{ pendingUnassignmentCount() === 1 ? 'solicitud' : 'solicitudes' }} de desasignación de
+      vehículos por revisar.
+    </span>
+    <app-ui-icon name="chevron-right" [size]="16" />
+  </a>
+}
+
+<nav class="views" aria-label="Vistas de solicitudes asignadas">
   @for (option of views; track option.value) {
     <a
       class="views__item"
@@ -92,31 +117,69 @@
         }
       </app-ui-form-field>
 
-      <app-ui-form-field class="filters__field" label="Ciclo" inputId="reviews-cycle">
-        <span class="ui-affix">
-          <app-ui-icon name="history" [size]="18" />
-        </span>
-        <select
-          id="reviews-cycle"
-          class="ui-select"
-          [value]="selectedCycle()"
-          (change)="setCycleFilter($event)"
-        >
-          <option [value]="allCycles">Todos los ciclos</option>
-          @for (cycle of cycles(); track cycle) {
-            <option [value]="cycle">{{ cycle }}</option>
-          }
-        </select>
-        <span class="ui-affix">
-          <app-ui-icon name="chevron-down" [size]="18" />
-        </span>
-      </app-ui-form-field>
+      @if (view() === 'revisadas') {
+        <app-ui-form-field class="filters__field" label="Tipo de solicitud" inputId="reviews-kind">
+          <span class="ui-affix">
+            <app-ui-icon name="clipboard" [size]="18" />
+          </span>
+          <select
+            id="reviews-kind"
+            class="ui-select"
+            [value]="selectedKind()"
+            (change)="setKindFilter($event)"
+          >
+            @for (option of kindFilters; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+          <span class="ui-affix">
+            <app-ui-icon name="chevron-down" [size]="18" />
+          </span>
+        </app-ui-form-field>
 
-      <app-ui-form-field
-        class="filters__field"
-        label="Orden por fecha"
-        inputId="reviews-date-order"
-      >
+        <app-ui-form-field class="filters__field" label="Resultado" inputId="reviews-result">
+          <span class="ui-affix">
+            <app-ui-icon name="shield-check" [size]="18" />
+          </span>
+          <select
+            id="reviews-result"
+            class="ui-select"
+            [value]="resultFilter()"
+            (change)="setResultFilter($event)"
+          >
+            @for (option of resultFilters; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+          <span class="ui-affix">
+            <app-ui-icon name="chevron-down" [size]="18" />
+          </span>
+        </app-ui-form-field>
+      }
+
+      @if (showCycleFilter()) {
+        <app-ui-form-field class="filters__field" label="Ciclo" inputId="reviews-cycle">
+          <span class="ui-affix">
+            <app-ui-icon name="history" [size]="18" />
+          </span>
+          <select
+            id="reviews-cycle"
+            class="ui-select"
+            [value]="selectedCycle()"
+            (change)="setCycleFilter($event)"
+          >
+            <option [value]="allCycles">Todos los ciclos</option>
+            @for (cycle of cycles(); track cycle) {
+              <option [value]="cycle">{{ cycle }}</option>
+            }
+          </select>
+          <span class="ui-affix">
+            <app-ui-icon name="chevron-down" [size]="18" />
+          </span>
+        </app-ui-form-field>
+      }
+
+      <app-ui-form-field class="filters__field" label="Orden por fecha" inputId="reviews-date-order">
         <span class="ui-affix">
           <app-ui-icon name="calendar" [size]="18" />
         </span>
@@ -156,7 +219,15 @@
   </app-ui-card>
 } @else if (visibleRequests().length) {
   <app-ui-card [padded]="false">
-    <app-review-request-list [requests]="visibleRequests()" />
+    <app-review-request-list
+      [items]="visibleRequests()"
+      [showKind]="showKindColumn()"
+      [caption]="
+        view() === 'revisadas'
+          ? 'Historial de solicitudes revisadas'
+          : 'Solicitudes de ingreso pendientes de revisión'
+      "
+    />
     <app-ui-pagination
       [page]="page()"
       [pageSize]="pageSize"
@@ -178,20 +249,21 @@
       @if (hasActiveFilters()) {
         <h2 class="empty__title">Sin resultados para tu búsqueda</h2>
         <p class="empty__description">
-          Ninguna solicitud coincide con el ciclo o el texto ingresado. Ajusta los filtros para
-          seguir revisando.
+          Ninguna solicitud coincide con los filtros aplicados. Ajústalos para seguir revisando.
         </p>
         <app-ui-button size="lg" variant="secondary" (click)="clearFilters()">
           Limpiar filtros
         </app-ui-button>
       } @else if (view() === 'revisadas') {
         <h2 class="empty__title">Todavía no has revisado solicitudes</h2>
-        <p class="empty__description">Aquí verás las solicitudes que apruebes o rechaces.</p>
+        <p class="empty__description">
+          Aquí verás las solicitudes de ingreso y de desasignación que apruebes o rechaces.
+        </p>
         <app-ui-button size="lg" routerLink="/revisiones">Ver pendientes</app-ui-button>
       } @else {
-        <h2 class="empty__title">No tienes solicitudes pendientes</h2>
+        <h2 class="empty__title">No tienes solicitudes de ingreso pendientes</h2>
         <p class="empty__description">
-          Las nuevas solicitudes asignadas para revisión aparecerán aquí.
+          Las nuevas solicitudes de autorización asignadas para revisión aparecerán aquí.
         </p>
       }
     </div>

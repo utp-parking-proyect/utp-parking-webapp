@@ -13,6 +13,42 @@
   />
 </section>
 
+@if (isSae()) {
+  <section class="workload" aria-labelledby="workload-title">
+    <div class="workload__head">
+      <h2 id="workload-title" class="workload__title">Tu carga de hoy</h2>
+      <p class="workload__subtitle">
+        @if (workloadLoading()) {
+          Consultando las solicitudes asignadas a ti…
+        } @else if (pendingTotal() === 0) {
+          Estás al día: no tienes solicitudes pendientes de revisión.
+        } @else {
+          Tienes {{ pendingTotal() }}
+          {{ pendingTotal() === 1 ? 'solicitud asignada' : 'solicitudes asignadas' }} esperando tu
+          revisión.
+        }
+      </p>
+    </div>
+
+    <div class="workload__grid">
+      @for (stat of workload(); track stat.label) {
+        <a class="stat" [routerLink]="stat.route" [queryParams]="stat.queryParams">
+          <app-ui-card>
+            <div class="stat__body" [class]="'stat__body--' + stat.variant">
+              <span class="stat__icon">
+                <app-ui-icon [name]="stat.icon" [size]="20" />
+              </span>
+              <p class="stat__value">{{ workloadLoading() ? '—' : stat.value }}</p>
+              <p class="stat__label">{{ stat.label }}</p>
+              <p class="stat__hint">{{ stat.hint }}</p>
+            </div>
+          </app-ui-card>
+        </a>
+      }
+    </div>
+  </section>
+}
+
 @if (actions().length) {
   <section class="actions" aria-labelledby="actions-title">
     <h2 id="actions-title" class="actions__title">¿Qué deseas hacer?</h2>

@@ -66,18 +66,14 @@
       }
 
       @case ('limit-reached') {
-        <div class="empty empty--limit">
-          <span class="empty__icon empty__icon--muted">
-            <app-ui-icon name="alert-triangle" [size]="26" />
+        <div class="empty">
+          <span class="empty__icon">
+            <app-ui-icon name="clipboard" [size]="26" />
           </span>
           <h2 class="empty__title">Alcanzaste el máximo de solicitudes de este ciclo</h2>
           <p class="empty__description">
             Has alcanzado el máximo de {{ maxRequestsPerCycle }} solicitudes permitidas para este
             ciclo. Podrás registrar nuevas solicitudes cuando inicie el siguiente ciclo.
-          </p>
-          <p class="empty__meta">
-            <app-ui-icon name="clipboard" [size]="14" />
-            <span>{{ cycleRequests() }} de {{ maxRequestsPerCycle }} solicitudes utilizadas</span>
           </p>
           <app-ui-button size="lg" routerLink="/solicitudes">Ver mis solicitudes</app-ui-button>
         </div>
@@ -93,47 +89,29 @@
             <legend class="picker__legend">Vehículo registrado</legend>
 
             @for (vehicle of vehicles(); track vehicle.idVehicle) {
-              @if (vehicle.status === 'ACTIVE') {
-                <label
-                  class="picker__option"
-                  [class.picker__option--selected]="
-                    selectedVehicle()?.idVehicle === vehicle.idVehicle
-                  "
-                >
-                  <input
-                    class="picker__input"
-                    type="radio"
-                    formControlName="numberPlate"
-                    [value]="vehicle.numberPlate"
-                  />
+              <label
+                class="picker__option"
+                [class.picker__option--selected]="selectedVehicle()?.idVehicle === vehicle.idVehicle"
+              >
+                <input
+                  class="picker__input"
+                  type="radio"
+                  formControlName="numberPlate"
+                  [value]="vehicle.numberPlate"
+                />
 
-                  <span class="picker__icon">
-                    <app-ui-icon [name]="iconFor(vehicle)" [size]="20" />
-                  </span>
+                <span class="picker__icon">
+                  <app-ui-icon [name]="iconFor(vehicle)" [size]="20" />
+                </span>
 
-                  <span class="picker__identity">
-                    <span class="picker__plate">{{ vehicle.numberPlate }}</span>
-                    <span class="picker__type">{{ vehicle.vehicleType }}</span>
-                    <span class="picker__state">Disponible</span>
-                  </span>
+                <span class="picker__identity">
+                  <span class="picker__plate">{{ vehicle.numberPlate }}</span>
+                  <span class="picker__type">{{ vehicle.vehicleType }}</span>
+                  <span class="picker__state">Disponible</span>
+                </span>
 
-                  <app-ui-badge tone="success">Seleccionable</app-ui-badge>
-                </label>
-              } @else {
-                <div class="picker__option picker__option--disabled" aria-disabled="true">
-                  <span class="picker__icon">
-                    <app-ui-icon [name]="iconFor(vehicle)" [size]="20" />
-                  </span>
-
-                  <span class="picker__identity">
-                    <span class="picker__plate">{{ vehicle.numberPlate }}</span>
-                    <span class="picker__type">{{ vehicle.vehicleType }}</span>
-                    <span class="picker__state">Vehículo deshabilitado</span>
-                  </span>
-
-                  <app-ui-badge tone="neutral">No disponible</app-ui-badge>
-                </div>
-              }
+                <app-ui-badge tone="success">Seleccionable</app-ui-badge>
+              </label>
             }
           </fieldset>
 
@@ -159,8 +137,9 @@
 
           @if (vehiclesLimitReached()) {
             <p class="form__note">
-              Has alcanzado el máximo de {{ maxActiveVehicles() }} vehículos activos. Deshabilita uno
-              en <a routerLink="/vehiculos">Mis vehículos</a> para registrar otro.
+              Has alcanzado el máximo de {{ maxAssignedVehicles() }} vehículos asignados. Solicita la
+              desasignación de uno en <a routerLink="/vehiculos">Mis vehículos</a> para registrar
+              otro.
             </p>
           }
         </form>
@@ -172,30 +151,12 @@
             <app-ui-icon name="car" [size]="26" />
           </span>
 
-          @if (hasOnlyInactiveVehicles()) {
-            <h2 class="empty__title">No tienes vehículos disponibles</h2>
-            <p class="empty__description">
-              Todos tus vehículos están deshabilitados. Habilita uno en
-              <strong>Mis vehículos</strong> o registra otro para continuar.
-            </p>
-            <div class="empty__actions">
-              <app-ui-button size="lg" routerLink="/vehiculos">Ir a mis vehículos</app-ui-button>
-              @if (!vehiclesLimitReached()) {
-                <app-ui-button size="lg" variant="secondary" (click)="registerNewVehicle()">
-                  Registrar vehículo
-                </app-ui-button>
-              }
-            </div>
-          } @else {
-            <h2 class="empty__title">No tienes vehículos registrados</h2>
-            <p class="empty__description">
-              Para realizar una solicitud necesitas registrar los datos del vehículo con el que
-              ingresarás al estacionamiento.
-            </p>
-            <app-ui-button size="lg" (click)="registerNewVehicle()">
-              Registrar vehículo
-            </app-ui-button>
-          }
+          <h2 class="empty__title">No tienes vehículos registrados</h2>
+          <p class="empty__description">
+            Para realizar una solicitud necesitas registrar los datos del vehículo con el que
+            ingresarás al estacionamiento.
+          </p>
+          <app-ui-button size="lg" (click)="registerNewVehicle()">Registrar vehículo</app-ui-button>
         </div>
       }
 
@@ -263,7 +224,7 @@
             <app-ui-button type="submit" size="lg" [loading]="submitting()">
               {{ submitting() ? 'Registrando solicitud…' : 'Solicitar autorización' }}
             </app-ui-button>
-            @if (activeVehicles().length) {
+            @if (vehicles().length) {
               <app-ui-button
                 variant="ghost"
                 size="lg"

@@ -69,3 +69,13 @@ export function toDate(value: unknown): Date | null {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
+
+export function isToday(value: unknown, today = new Date()): boolean {
+  const date = toDate(value);
+  return (
+    date !== null &&
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
+  );
+}
