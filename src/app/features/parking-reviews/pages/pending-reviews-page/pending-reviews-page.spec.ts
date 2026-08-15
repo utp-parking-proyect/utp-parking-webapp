@@ -2,7 +2,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { ParkingRequestInformation } from '../../../../core/parking/models/parking-request.model';
+import { VehicleUnassignmentRequestDetail } from '../../../../core/parking/models/vehicle.model';
 import { ParkingReviewService } from '../../../../core/parking/parking-review.service';
+import { VehicleUnassignmentService } from '../../../../core/parking/vehicle-unassignment.service';
 import { CurrentCycleService } from '../../../../core/portal/current-cycle.service';
 import { PendingReviewsPage } from './pending-reviews-page';
 
@@ -14,6 +16,7 @@ interface RequestOptions {
   lastName?: string;
   username?: string;
   date?: string;
+  status?: string;
 }
 
 function request(options: RequestOptions): ParkingRequestInformation {
@@ -32,7 +35,36 @@ function request(options: RequestOptions): ParkingRequestInformation {
     },
     dateRequest: options.date ?? `2026-03-${String(options.id).padStart(2, '0')}T10:00:00Z`,
     dateResponse: null,
-    status: 'En revisión',
+    status: options.status ?? 'En revisión',
+  };
+}
+
+function unassignment(options: RequestOptions): VehicleUnassignmentRequestDetail {
+  return {
+    idUnassignmentRequest: options.id,
+    idVehicle: options.id,
+    applicant: {
+      idApplicant: options.id,
+      nameApplicant: options.name ?? 'Ana',
+      lastNameApplicant: options.lastName ?? 'Gómez',
+      usernameApplicant: options.username ?? `U900${options.id}`,
+      numberCycle: options.cycle ?? '2026-1',
+    },
+    vehicle: {
+      numberPlate: options.plate ?? `DES-${String(options.id).padStart(3, '0')}`,
+      vehicleType: 'Automóvil',
+    },
+    reason: 'Vendí el vehículo.',
+    status: options.status ?? 'APROBADO',
+    dateRequest: options.date ?? `2026-03-${String(options.id).padStart(2, '0')}T10:00:00Z`,
+    dateResponse: '2026-03-21T10:00:00Z',
+    workflow: [
+      {
+        status: options.status ?? 'APROBADO',
+        dateStatusChange: '2026-03-21T10:00:00Z',
+        observation: 'Desasignación aprobada.',
+      },
+    ],
   };
 }
 
@@ -44,6 +76,8 @@ describe('PendingReviewsPage filtros y paginado', () => {
   let fixture: ComponentFixture<PendingReviewsPage>;
   const pendingRequests = signal<ParkingRequestInformation[]>([]);
   const reviewedRequests = signal<ParkingRequestInformation[]>([]);
+  const pendingAcceptorRequests = signal<VehicleUnassignmentRequestDetail[]>([]);
+  const reviewedAcceptorRequests = signal<VehicleUnassignmentRequestDetail[]>([]);
 
   function host(): HTMLElement {
     return fixture.nativeElement as HTMLElement;
@@ -63,6 +97,10 @@ describe('PendingReviewsPage filtros y paginado', () => {
     fixture = TestBed.createComponent(PendingReviewsPage);
     fixture.componentRef.setInput('vista', vista);
     fixture.detectChanges();
+  }
+
+  function kinds(): string[] {
+    return rows().map((row) => row.querySelector('.reviews-table__kind')?.textContent?.trim() ?? '');
   }
 
   function search(value: string): void {
@@ -90,6 +128,8 @@ describe('PendingReviewsPage filtros y paginado', () => {
   beforeEach(() => {
     pendingRequests.set([]);
     reviewedRequests.set([]);
+    pendingAcceptorRequests.set([]);
+    reviewedAcceptorRequests.set([]);
 
     TestBed.configureTestingModule({
       imports: [PendingReviewsPage],
@@ -103,6 +143,16 @@ describe('PendingReviewsPage filtros y paginado', () => {
             isLoading: signal(false),
             hasFailed: signal(false),
             reload: () => undefined,
+          },
+        },
+        {
+          provide: VehicleUnassignmentService,
+          useValue: {
+            pendingAcceptorRequests,
+            reviewedAcceptorRequests,
+            acceptorIsLoading: signal(false),
+            acceptorHasFailed: signal(false),
+            reloadAcceptor: () => undefined,
           },
         },
         {
@@ -266,5 +316,130 @@ describe('PendingReviewsPage filtros y paginado', () => {
     build();
 
     expect(host().querySelector('.filters')).toBeNull();
+  });
+
+  it('titula la vista de pendientes por el tipo de solicitud que atiende', () => {
+    build();
+
+    expect(host().querySelector('.page-header__title')?.textContent).toContain(
+      'Ingreso al estacionamiento',
+    );
+  });
+
+  it('titula la vista revisada como historial de revisiones', () => {
+    build('revisadas');
+
+    expect(host().querySelector('.page-header__title')?.textContent).toContain(
+      'Historial de revisiones',
+    );
+  });
+
+  it('no mezcla desasignaciones en la vista de pendientes', () => {
+    pendingRequests.set([request({ id: 1, plate: 'AAA-111' })]);
+    pendingAcceptorRequests.set([unassignment({ id: 2, plate: 'DES-002' })]);
+    build();
+
+    expect(plates()).toEqual(['AAA-111']);
+  });
+
+  it('avisa de las desasignaciones pendientes con un enlace a su bandeja', () => {
+    pendingRequests.set([request({ id: 1 })]);
+    pendingAcceptorRequests.set([unassignment({ id: 2 }), unassignment({ id: 3 })]);
+    build();
+
+    const crosslink = host().querySelector('.crosslink');
+    expect(crosslink).not.toBeNull();
+    expect(crosslink?.textContent).toContain('2');
+    expect(crosslink?.getAttribute('href')).toBe('/revisiones-vehiculos');
+  });
+
+  it('no avisa de desasignaciones cuando no hay pendientes', () => {
+    pendingRequests.set([request({ id: 1 })]);
+    build();
+
+    expect(host().querySelector('.crosslink')).toBeNull();
+  });
+
+  it('une ambos tipos de solicitud en el historial', () => {
+    reviewedRequests.set([request({ id: 1, plate: 'AAA-111', status: 'APROBADO' })]);
+    reviewedAcceptorRequests.set([unassignment({ id: 2, plate: 'DES-002' })]);
+    build('revisadas');
+
+    expect(plates()).toEqual(['DES-002', 'AAA-111']);
+    expect(kinds()).toEqual(['Desasignación', 'Ingreso']);
+  });
+
+  it('filtra el historial por tipo de solicitud', () => {
+    reviewedRequests.set([request({ id: 1, plate: 'AAA-111', status: 'APROBADO' })]);
+    reviewedAcceptorRequests.set([unassignment({ id: 2, plate: 'DES-002' })]);
+    build('revisadas');
+
+    selectOption('#reviews-kind', 'unassignment');
+
+    expect(plates()).toEqual(['DES-002']);
+  });
+
+  it('oculta el filtro de ciclo cuando solo se ven desasignaciones', () => {
+    reviewedRequests.set([request({ id: 1, status: 'APROBADO' })]);
+    reviewedAcceptorRequests.set([unassignment({ id: 2 })]);
+    build('revisadas');
+
+    expect(host().querySelector('#reviews-cycle')).not.toBeNull();
+
+    selectOption('#reviews-kind', 'unassignment');
+
+    expect(host().querySelector('#reviews-cycle')).toBeNull();
+  });
+
+  it('filtra el historial por resultado', () => {
+    reviewedRequests.set([
+      request({ id: 1, plate: 'AAA-111', status: 'APROBADO' }),
+      request({ id: 2, plate: 'BBB-222', status: 'RECHAZADO' }),
+    ]);
+    build('revisadas');
+
+    selectOption('#reviews-result', 'rejected');
+
+    expect(plates()).toEqual(['BBB-222']);
+  });
+
+  it('no ofrece los filtros de tipo ni resultado en la vista de pendientes', () => {
+    pendingRequests.set([request({ id: 1 })]);
+    build();
+
+    expect(host().querySelector('#reviews-kind')).toBeNull();
+    expect(host().querySelector('#reviews-result')).toBeNull();
+  });
+
+  it('enlaza el detalle de cada tipo a su propia página', () => {
+    reviewedRequests.set([request({ id: 1, plate: 'AAA-111', status: 'APROBADO' })]);
+    reviewedAcceptorRequests.set([unassignment({ id: 2, plate: 'DES-002' })]);
+    build('revisadas');
+
+    const links = rows().map((row) => row.querySelector('a.reviews-table__link'));
+
+    expect(links.every((link) => link !== null)).toBe(true);
+    expect(links[0]?.getAttribute('href')).toBe('/revisiones-vehiculos/2');
+    expect(links[1]?.getAttribute('href')).toBe('/revisiones/1');
+  });
+
+  it('no abre ningún modal para ver el detalle', () => {
+    reviewedAcceptorRequests.set([unassignment({ id: 2, plate: 'DES-002' })]);
+    build('revisadas');
+
+    expect(host().querySelector('button.reviews-table__link')).toBeNull();
+    expect(host().querySelector('app-ui-dialog')).toBeNull();
+  });
+
+  it('preselecciona el tipo recibido por query param', () => {
+    reviewedRequests.set([request({ id: 1, plate: 'AAA-111', status: 'APROBADO' })]);
+    reviewedAcceptorRequests.set([unassignment({ id: 2, plate: 'DES-002' })]);
+
+    fixture = TestBed.createComponent(PendingReviewsPage);
+    fixture.componentRef.setInput('vista', 'revisadas');
+    fixture.componentRef.setInput('tipo', 'unassignment');
+    fixture.detectChanges();
+
+    expect(plates()).toEqual(['DES-002']);
   });
 });

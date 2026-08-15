@@ -18,10 +18,12 @@
           [queryParams]="item.queryParams"
           routerLinkActive="shell__nav-item--active"
           [routerLinkActiveOptions]="{ exact: !!item.exact }"
+          [attr.title]="sidebarExpanded() ? null : item.label"
+          [attr.aria-label]="item.label"
           (click)="closeSidebar()"
         >
           <app-ui-icon [name]="item.icon" [size]="22" />
-          <span class="shell__nav-label">{{ item.label }}</span>
+          <span class="shell__nav-label">{{ navLabel(item) }}</span>
         </a>
       }
     </nav>

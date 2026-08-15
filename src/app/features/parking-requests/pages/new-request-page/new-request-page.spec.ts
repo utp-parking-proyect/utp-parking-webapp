@@ -63,9 +63,8 @@ describe('NewRequestPage plate validation', () => {
           provide: VehicleService,
           useValue: {
             vehicles: signal([]),
-            activeVehicles: signal([]),
-            activeVehicleCount: signal(0),
-            maxActiveVehicles: signal(5),
+            assignedVehicleCount: signal(0),
+            maxAssignedVehicles: signal(5),
             hasReachedLimit: signal(false),
             isLoading: signal(false),
             hasFailed: signal(true),

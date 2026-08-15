@@ -8,13 +8,13 @@ import { ParkingRequestService } from '../../../../core/parking/parking-request.
 import { VehicleService } from '../../../../core/parking/vehicle.service';
 import { NewRequestPage } from './new-request-page';
 
-function vehicle(idVehicle: number, numberPlate: string, active: boolean): VehicleDetail {
+function vehicle(idVehicle: number, numberPlate: string): VehicleDetail {
   return {
     idVehicle,
     numberPlate,
     idVehicleType: 1,
     vehicleType: 'Automóvil',
-    status: active ? 'ACTIVE' : 'DISABLED',
+    status: 'ASSIGNED',
   };
 }
 
@@ -40,7 +40,7 @@ describe('NewRequestPage vehicle selection', () => {
     return Array.from(host().querySelectorAll<HTMLInputElement>('.picker__input'));
   }
 
-  function build(activeVehicles: VehicleDetail[]): void {
+  function build(): void {
     TestBed.configureTestingModule({
       imports: [NewRequestPage],
       providers: [
@@ -64,9 +64,8 @@ describe('NewRequestPage vehicle selection', () => {
           provide: VehicleService,
           useValue: {
             vehicles,
-            activeVehicles: signal(activeVehicles),
-            activeVehicleCount: signal(activeVehicles.length),
-            maxActiveVehicles: signal(5),
+            assignedVehicleCount: signal(vehicles().length),
+            maxAssignedVehicles: signal(5),
             hasReachedLimit: signal(false),
             isLoading: signal(false),
             hasFailed: signal(false),
@@ -81,32 +80,31 @@ describe('NewRequestPage vehicle selection', () => {
   }
 
   beforeEach(() => {
-    vehicles = signal<VehicleDetail[]>([vehicle(1, 'ABC-123', true), vehicle(2, 'XYZ-456', false)]);
+    vehicles = signal<VehicleDetail[]>([vehicle(1, 'ABC-123'), vehicle(2, 'XYZ-456')]);
     hasReachedCycleLimit = signal(false);
     currentCycleRequests = signal([]);
   });
 
   afterEach(() => TestBed.resetTestingModule());
 
-  it('muestra los vehículos deshabilitados pero no permite seleccionarlos', () => {
-    build([vehicles()[0]]);
+  it('permite seleccionar todos los vehículos asignados', () => {
+    build();
 
     expect(options().length).toBe(2);
-    expect(radios().length).toBe(1);
-    expect(options()[1].textContent).toContain('XYZ-456');
-    expect(options()[1].textContent).toContain('Vehículo deshabilitado');
-    expect(options()[1].classList).toContain('picker__option--disabled');
+    expect(radios().length).toBe(2);
+    expect(text()).not.toContain('Vehículo deshabilitado');
+    expect(text()).not.toContain('No disponible');
   });
 
-  it('preselecciona el primer vehículo activo', () => {
-    build([vehicles()[0]]);
+  it('preselecciona el primer vehículo asignado', () => {
+    build();
 
     expect(radios()[0].checked).toBe(true);
   });
 
   it('muestra el contador de solicitudes del ciclo', () => {
     currentCycleRequests.set([{}]);
-    build([vehicles()[0]]);
+    build();
 
     expect(text()).toContain('Has realizado 1 de 2 solicitudes para este ciclo');
   });
@@ -114,16 +112,16 @@ describe('NewRequestPage vehicle selection', () => {
   it('bloquea el registro cuando se alcanzó el límite de solicitudes del ciclo', () => {
     currentCycleRequests.set([{}, {}]);
     hasReachedCycleLimit.set(true);
-    build([vehicles()[0]]);
+    build();
 
     expect(text()).toContain('Has alcanzado el máximo de 2 solicitudes permitidas para este ciclo');
     expect(options().length).toBe(0);
   });
 
-  it('pide habilitar un vehículo cuando todos están deshabilitados', () => {
-    vehicles.set([vehicle(2, 'XYZ-456', false)]);
-    build([]);
+  it('pide registrar un vehículo cuando el usuario no tiene ninguno asignado', () => {
+    vehicles.set([]);
+    build();
 
-    expect(text()).toContain('No tienes vehículos disponibles');
+    expect(text()).toContain('No tienes vehículos registrados');
   });
 });

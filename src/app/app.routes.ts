@@ -59,6 +59,7 @@ export const routes: Routes = [
       {
         path: 'solicitudes/desasignacion/:unassignmentId',
         canActivate: [roleGuard(APPLICANT_ROLES)],
+        data: { mode: 'mine' },
         loadComponent: () =>
           import(
             './features/vehicles/pages/unassignment-detail-page/unassignment-detail-page'
@@ -87,6 +88,15 @@ export const routes: Routes = [
           import(
             './features/parking-reviews/pages/vehicle-unassignment-reviews-page/vehicle-unassignment-reviews-page'
           ).then((m) => m.VehicleUnassignmentReviewsPage),
+      },
+      {
+        path: 'revisiones-vehiculos/:unassignmentId',
+        canActivate: [roleGuard([ROLE_SAE])],
+        data: { mode: 'review' },
+        loadComponent: () =>
+          import(
+            './features/vehicles/pages/unassignment-detail-page/unassignment-detail-page'
+          ).then((m) => m.UnassignmentDetailPage),
       },
       {
         path: 'revisiones/:requestId',

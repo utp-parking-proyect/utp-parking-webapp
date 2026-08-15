@@ -80,8 +80,8 @@ export class MyVehiclesPage {
 
   protected readonly vehicleTypes = VEHICLE_TYPES;
   protected readonly vehicles = this.vehicleService.vehicles;
-  protected readonly activeVehicleCount = this.vehicleService.activeVehicleCount;
-  protected readonly maxActiveVehicles = this.vehicleService.maxActiveVehicles;
+  protected readonly assignedVehicleCount = this.vehicleService.assignedVehicleCount;
+  protected readonly maxAssignedVehicles = this.vehicleService.maxAssignedVehicles;
   protected readonly hasReachedLimit = this.vehicleService.hasReachedLimit;
   protected readonly isLoading = this.vehicleService.isLoading;
   protected readonly hasFailed = this.vehicleService.hasFailed;
@@ -108,8 +108,6 @@ export class MyVehiclesPage {
 
   protected readonly plateMaxLength = PLATE_MAX_LENGTH;
 
-  protected readonly availabilityTarget = signal<VehicleDetail | null>(null);
-  protected readonly updatingId = signal<number | null>(null);
   protected readonly registering = signal(false);
   protected readonly formOpen = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
@@ -332,61 +330,6 @@ export class MyVehiclesPage {
       },
       error: (error: HttpErrorResponse) => {
         this.registering.set(false);
-        this.errorMessage.set(apiErrorMessage(error));
-      },
-    });
-  }
-
-  canEnable(vehicle: VehicleDetail): boolean {
-    return vehicle.status === 'ACTIVE' || !this.hasReachedLimit();
-  }
-
-  askAvailabilityChange(vehicle: VehicleDetail): void {
-    if (this.updatingId() !== null) {
-      return;
-    }
-    this.errorMessage.set(null);
-    this.successMessage.set(null);
-
-    if (!this.canEnable(vehicle)) {
-      this.errorMessage.set(
-        `Ya tienes ${this.maxActiveVehicles()} vehículos activos. Deshabilita otro vehículo antes de habilitar este.`,
-      );
-      return;
-    }
-
-    this.availabilityTarget.set(vehicle);
-  }
-
-  cancelAvailabilityChange(): void {
-    if (this.updatingId() !== null) {
-      return;
-    }
-    this.availabilityTarget.set(null);
-  }
-
-  confirmAvailabilityChange(): void {
-    const vehicle = this.availabilityTarget();
-    if (!vehicle || this.updatingId() !== null) {
-      return;
-    }
-
-    const active = vehicle.status !== 'ACTIVE';
-    this.updatingId.set(vehicle.idVehicle);
-
-    this.vehicleService.setAvailability(vehicle.idVehicle, active).subscribe({
-      next: () => {
-        this.updatingId.set(null);
-        this.availabilityTarget.set(null);
-        this.successMessage.set(
-          active
-            ? `El vehículo ${vehicle.numberPlate} fue habilitado.`
-            : `El vehículo ${vehicle.numberPlate} fue deshabilitado.`,
-        );
-      },
-      error: (error: HttpErrorResponse) => {
-        this.updatingId.set(null);
-        this.availabilityTarget.set(null);
         this.errorMessage.set(apiErrorMessage(error));
       },
     });
