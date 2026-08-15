@@ -1,22 +1,61 @@
-<section class="hero">
-  <div class="hero__text">
-    <h1 class="hero__title">Bienvenido a UTP+ Parking</h1>
-    <p class="hero__subtitle">El portal de acceso a los estacionamientos de la universidad.</p>
-  </div>
+@if (isApplicant()) {
+  <section class="availability" aria-labelledby="availability-title">
+    <div class="availability__head">
+      <h1 id="availability-title" class="availability__title">Estacionamientos disponibles</h1>
+      <p class="availability__subtitle">
+        {{ totalAvailableSpaces }} espacios libres en este momento entre todas las sedes.
+      </p>
+    </div>
 
-  <img
-    class="hero__illustration"
-    src="illustrations/parking-welcome.webp"
-    alt=""
-    width="960"
-    height="642"
-  />
-</section>
+    <div class="availability__grid">
+      @for (location of availability; track location.idLocation) {
+        <app-ui-card>
+          <div class="spot" [class]="'spot--' + availabilityTone(location)">
+            <header class="spot__head">
+              <span class="spot__icon">
+                <app-ui-icon name="car" [size]="20" />
+              </span>
+              <h2 class="spot__name">{{ location.nameLocation }}</h2>
+            </header>
+
+            <p class="spot__value">
+              <strong>{{ location.availableSpaces }}</strong>
+              <span class="spot__total">de {{ location.totalSpaces }}</span>
+            </p>
+
+            <div
+              class="spot__meter"
+              role="progressbar"
+              [attr.aria-valuenow]="location.availableSpaces"
+              [attr.aria-valuemin]="0"
+              [attr.aria-valuemax]="location.totalSpaces"
+              [attr.aria-label]="'Espacios disponibles en ' + location.nameLocation"
+            >
+              <span class="spot__meter-fill" [style.width.%]="occupancyFor(location)"></span>
+            </div>
+
+            <p class="spot__hint">
+              @if (location.availableSpaces === 0) {
+                Sin espacios disponibles
+              } @else {
+                {{ occupancyFor(location) }}% de la capacidad libre
+              }
+            </p>
+          </div>
+        </app-ui-card>
+      }
+    </div>
+  </section>
+}
 
 @if (isSae()) {
   <section class="workload" aria-labelledby="workload-title">
     <div class="workload__head">
-      <h2 id="workload-title" class="workload__title">Tu carga de hoy</h2>
+      @if (isApplicant()) {
+        <h2 id="workload-title" class="workload__title">Tu carga de hoy</h2>
+      } @else {
+        <h1 id="workload-title" class="workload__title workload__title--lead">Tu carga de hoy</h1>
+      }
       <p class="workload__subtitle">
         @if (workloadLoading()) {
           Consultando las solicitudes asignadas a ti…
@@ -66,6 +105,48 @@
               {{ action.cta }}
               <app-ui-icon name="arrow-right" [size]="16" />
             </span>
+          </app-ui-card>
+        </a>
+      }
+    </div>
+  </section>
+}
+
+@if (isStudent()) {
+  <section class="platforms" aria-labelledby="platforms-title">
+    <h2 id="platforms-title" class="platforms__title">Tus plataformas digitales</h2>
+
+    <div class="platforms__grid">
+      @for (platform of platforms; track platform.name) {
+        <a
+          class="platform"
+          [href]="platform.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          [attr.aria-label]="platform.name + ': ' + platform.description"
+        >
+          <app-ui-card>
+            <div class="platform__body">
+              <img
+                class="platform__preview"
+                [src]="platform.preview"
+                alt=""
+                width="89"
+                height="76"
+                loading="lazy"
+              />
+
+              <div class="platform__text">
+                <img
+                  class="platform__logo"
+                  [src]="platform.logo"
+                  [alt]="platform.name"
+                  height="18"
+                  loading="lazy"
+                />
+                <p class="platform__description">{{ platform.description }}</p>
+              </div>
+            </div>
           </app-ui-card>
         </a>
       }
