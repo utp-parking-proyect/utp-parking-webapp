@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { APPLICANT_ROLES, ROLE_SAE } from './core/auth/auth.constants';
+import { APPLICANT_ROLES, ROLE_SAE, ROLE_SECURITY } from './core/auth/auth.constants';
 import { authGuard } from './core/guards/auth.guard';
 import { guestGuard } from './core/guards/guest.guard';
 import { roleGuard } from './core/guards/role.guard';
@@ -72,6 +72,14 @@ export const routes: Routes = [
           import('./features/parking-requests/pages/request-detail-page/request-detail-page').then(
             (m) => m.RequestDetailPage,
           ),
+      },
+      {
+        path: 'control-acceso',
+        canActivate: [roleGuard([ROLE_SECURITY])],
+        loadComponent: () =>
+          import(
+            './features/access-control/pages/security-control-page/security-control-page'
+          ).then((m) => m.SecurityControlPage),
       },
       {
         path: 'revisiones',

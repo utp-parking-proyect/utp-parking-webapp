@@ -1,6 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Params, RouterLink } from '@angular/router';
 import { injectRoleAccess } from '../../../../core/auth/role-access';
+import {
+  ParkingAvailabilityService,
+  availabilityToneFor,
+} from '../../../../core/control/parking-availability.service';
+import {
+  AvailabilityTone,
+  LocationAvailability,
+} from '../../../../core/control/models/parking-availability.model';
 import { ParkingReviewService } from '../../../../core/parking/parking-review.service';
 import { isToday } from '../../../../core/parking/request-status.util';
 import { VehicleUnassignmentService } from '../../../../core/parking/vehicle-unassignment.service';
@@ -26,13 +35,6 @@ interface WorkloadStat {
   queryParams?: Params;
 }
 
-interface ParkingAvailability {
-  idLocation: number;
-  nameLocation: string;
-  availableSpaces: number;
-  totalSpaces: number;
-}
-
 interface DigitalPlatform {
   name: string;
   logo: string;
@@ -40,12 +42,6 @@ interface DigitalPlatform {
   description: string;
   url: string;
 }
-
-const PLACEHOLDER_PARKING_AVAILABILITY: ParkingAvailability[] = [
-  { idLocation: 1, nameLocation: 'Lima Centro', availableSpaces: 42, totalSpaces: 120 },
-  { idLocation: 2, nameLocation: 'Lima Norte', availableSpaces: 18, totalSpaces: 80 },
-  { idLocation: 3, nameLocation: 'Lima Sur', availableSpaces: 0, totalSpaces: 60 },
-];
 
 const DIGITAL_PLATFORMS: DigitalPlatform[] = [
   {
@@ -96,6 +92,16 @@ const APPLICANT_ACTIONS: HomeAction[] = [
   },
 ];
 
+const SECURITY_ACTIONS: HomeAction[] = [
+  {
+    title: 'Control de acceso',
+    description: 'Registra el ingreso y la salida de vehículos en la puerta de tu sede.',
+    cta: 'Abrir control de acceso',
+    icon: 'shield-check',
+    route: '/control-acceso',
+  },
+];
+
 const SAE_ACTIONS: HomeAction[] = [
   {
     title: 'Ingreso al estacionamiento',
@@ -132,35 +138,40 @@ export class HomePage {
   private readonly access = injectRoleAccess();
   private readonly parkingReviewService = inject(ParkingReviewService);
   private readonly unassignmentService = inject(VehicleUnassignmentService);
+  private readonly availabilityService = inject(ParkingAvailabilityService);
 
   protected readonly isSae = this.access.isSae;
   protected readonly isApplicant = this.access.isApplicant;
   protected readonly isStudent = this.access.isStudent;
-  protected readonly availability = PLACEHOLDER_PARKING_AVAILABILITY;
+  protected readonly isSecurity = this.access.isSecurity;
   protected readonly platforms = DIGITAL_PLATFORMS;
 
-  protected readonly totalAvailableSpaces = this.availability.reduce(
-    (total, location) => total + location.availableSpaces,
-    0,
-  );
+  protected readonly campuses = this.availabilityService.campuses;
+  protected readonly totalAvailableSpaces = this.availabilityService.totalAvailable;
+  protected readonly availabilityLoading = this.availabilityService.isLoading;
+  protected readonly availabilityFailed = this.availabilityService.hasFailed;
+  protected readonly connectionStatus = this.availabilityService.connectionStatus;
+  protected readonly hasAvailability = computed(() => this.campuses().length > 0);
 
-  occupancyFor(location: ParkingAvailability): number {
-    if (location.totalSpaces <= 0) {
-      return 0;
-    }
-    return Math.round((location.availableSpaces / location.totalSpaces) * 100);
+  constructor() {
+    this.availabilityService.realtimeUpdates().pipe(takeUntilDestroyed()).subscribe();
   }
 
-  availabilityTone(location: ParkingAvailability): 'full' | 'low' | 'free' {
-    if (location.availableSpaces === 0) {
-      return 'full';
+  freeRatioFor(location: LocationAvailability): number {
+    if (location.capacity <= 0) {
+      return 0;
     }
-    return this.occupancyFor(location) <= 25 ? 'low' : 'free';
+    return Math.round((location.available / location.capacity) * 100);
+  }
+
+  availabilityTone(location: LocationAvailability): AvailabilityTone {
+    return availabilityToneFor(location);
   }
 
   protected readonly actions = computed<HomeAction[]>(() => [
     ...(this.access.isApplicant() ? APPLICANT_ACTIONS : []),
     ...(this.access.isSae() ? SAE_ACTIONS : []),
+    ...(this.access.isSecurity() ? SECURITY_ACTIONS : []),
   ]);
 
   protected readonly workloadLoading = computed(

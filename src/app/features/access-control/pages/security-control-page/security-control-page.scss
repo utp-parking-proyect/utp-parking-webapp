@@ -1,0 +1,227 @@
+@use 'styles/breakpoints' as bp;
+
+:host {
+  display: block;
+  max-width: 68rem;
+  margin-inline: auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin-bottom: var(--space-6);
+
+  @include bp.respond-down(bp.$breakpoint-mobile) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.page-header__title {
+  font-size: var(--text-2xl);
+}
+
+.page-header__subtitle {
+  margin-top: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.realtime {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.realtime__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-text-disabled);
+}
+
+.realtime--connected .realtime__dot {
+  background-color: var(--color-success);
+}
+
+.realtime--connecting .realtime__dot,
+.realtime--reconnecting .realtime__dot {
+  background-color: var(--color-warning);
+}
+
+.control {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  align-items: start;
+
+  @include bp.respond-down(bp.$breakpoint-tablet) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.control__side {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.form__actions {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+}
+
+.state {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-text-secondary);
+}
+
+.state__spinner {
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--color-border-strong);
+  border-top-color: var(--color-primary);
+  animation: state-spin 700ms linear infinite;
+}
+
+.state__actions {
+  margin-top: var(--space-4);
+}
+
+.spot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.spot__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.spot__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.spot__name {
+  font-size: var(--text-md);
+  font-weight: 700;
+}
+
+.spot__value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+
+  strong {
+    font-size: var(--text-3xl);
+    line-height: var(--leading-tight);
+  }
+}
+
+.spot__total {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.spot__hint {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.spot--medium .spot__icon {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.spot--low .spot__icon,
+.spot--full .spot__icon {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.spot--full .spot__hint {
+  font-weight: 700;
+  color: var(--color-danger);
+}
+
+.result__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-md);
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.result__message {
+  font-size: var(--text-lg);
+  line-height: var(--leading-tight);
+  color: var(--color-success);
+}
+
+.result--rejected {
+  .result__icon {
+    background-color: var(--color-danger-bg);
+    color: var(--color-danger);
+  }
+
+  .result__message {
+    color: var(--color-danger);
+  }
+}
+
+.result__details {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.result__detail {
+  dt {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  dd {
+    margin-top: var(--space-1);
+    font-weight: 700;
+    color: var(--color-text);
+  }
+}
+
+@keyframes state-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .state__spinner {
+    animation: none;
+  }
+}

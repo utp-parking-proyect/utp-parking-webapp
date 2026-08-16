@@ -1,0 +1,41 @@
+<div class="nav-guide__scrim" (click)="closed.emit()"></div>
+
+@if (anchor(); as anchor) {
+  <div
+    class="nav-guide__spotlight"
+    aria-hidden="true"
+    [style.top.px]="anchor.top"
+    [style.left.px]="anchor.left"
+    [style.width.px]="anchor.width"
+    [style.height.px]="anchor.height"
+  >
+    <app-ui-icon [name]="icon()" [size]="22" />
+    <span class="nav-guide__spotlight-label">{{ label() }}</span>
+  </div>
+}
+
+<div
+  class="nav-guide__popover"
+  [class.nav-guide__popover--floating]="anchor() === null"
+  [style.top.px]="popoverTop()"
+  [style.left.px]="anchor()?.left"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="nav-guide-title"
+>
+  <p class="nav-guide__counter">{{ index() + 1 }}/{{ total() }}</p>
+
+  <h2 id="nav-guide-title" class="nav-guide__title">
+    <app-ui-icon [name]="icon()" [size]="18" />
+    {{ label() }}
+  </h2>
+
+  <p class="nav-guide__text">{{ description() }}</p>
+
+  <div class="nav-guide__actions">
+    <app-ui-button (click)="next.emit()">
+      {{ isLast() ? 'Entendido' : 'Continuar' }}
+    </app-ui-button>
+    <app-ui-button variant="ghost" (click)="closed.emit()">Salir</app-ui-button>
+  </div>
+</div>
