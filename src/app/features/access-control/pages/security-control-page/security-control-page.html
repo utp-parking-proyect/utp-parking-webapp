@@ -1,0 +1,183 @@
+<header class="page-header">
+  <div>
+    <h1 class="page-header__title">Control de acceso</h1>
+    <p class="page-header__subtitle">
+      Registra el ingreso y la salida de vehículos en la puerta de tu sede.
+    </p>
+  </div>
+
+  <p class="realtime" [class]="'realtime--' + connectionStatus()">
+    <span class="realtime__dot" aria-hidden="true"></span>
+    @switch (connectionStatus()) {
+      @case ('connected') {
+        Actualizando en tiempo real
+      }
+      @case ('reconnecting') {
+        Reconectando…
+      }
+      @case ('connecting') {
+        Conectando…
+      }
+      @default {
+        Sin actualización automática
+      }
+    }
+  </p>
+</header>
+
+@if (locationsLoading() && !locations().length) {
+  <app-ui-card>
+    <p class="state">
+      <span class="state__spinner" aria-hidden="true"></span>
+      <span>Cargando las sedes…</span>
+    </p>
+  </app-ui-card>
+} @else if (locationsFailed() && !locations().length) {
+  <app-ui-card>
+    <app-ui-alert tone="danger">
+      No pudimos cargar la disponibilidad de las sedes. Inténtalo nuevamente en unos minutos.
+    </app-ui-alert>
+    <div class="state__actions">
+      <app-ui-button variant="secondary" (click)="reload()">Reintentar</app-ui-button>
+    </div>
+  </app-ui-card>
+} @else {
+  <div class="control">
+    <app-ui-card>
+      <form class="form" [formGroup]="form" (ngSubmit)="registerEntry()">
+        <app-ui-form-field label="Sede" inputId="location">
+          <select id="location" class="ui-select" formControlName="locationId">
+            @for (location of locations(); track location.locationId) {
+              <option [ngValue]="location.locationId">{{ location.locationName }}</option>
+            }
+          </select>
+          <span class="ui-affix">
+            <app-ui-icon name="chevron-down" [size]="18" />
+          </span>
+        </app-ui-form-field>
+
+        <app-ui-form-field
+          label="Placa del vehículo"
+          inputId="number-plate"
+          hint="Ejemplo: ABC-123"
+          [error]="plateError()"
+        >
+          <input
+            id="number-plate"
+            class="ui-input"
+            type="text"
+            inputmode="text"
+            autocapitalize="characters"
+            autocomplete="off"
+            [attr.maxlength]="plateMaxLength"
+            placeholder="ABC-123"
+            formControlName="numberPlate"
+            (input)="normalizePlate($event)"
+          />
+          <span class="ui-affix">
+            <app-ui-icon name="car" [size]="18" />
+          </span>
+        </app-ui-form-field>
+
+        @if (errorMessage(); as message) {
+          <app-ui-alert tone="danger" (closed)="errorMessage.set(null)">{{ message }}</app-ui-alert>
+        }
+
+        <div class="form__actions">
+          <app-ui-button
+            type="submit"
+            size="lg"
+            [block]="true"
+            [loading]="submitting() === 'entry'"
+            [disabled]="isBusy()"
+          >
+            <app-ui-icon name="arrow-right" [size]="18" />
+            {{ submitting() === 'entry' ? 'Registrando ingreso…' : 'Registrar ingreso' }}
+          </app-ui-button>
+
+          <app-ui-button
+            variant="secondary"
+            size="lg"
+            [block]="true"
+            [loading]="submitting() === 'exit'"
+            [disabled]="isBusy()"
+            (click)="registerExit()"
+          >
+            <app-ui-icon name="arrow-left" [size]="18" />
+            {{ submitting() === 'exit' ? 'Registrando salida…' : 'Registrar salida' }}
+          </app-ui-button>
+        </div>
+      </form>
+    </app-ui-card>
+
+    <div class="control__side">
+      @if (selectedLocation(); as location) {
+        <app-ui-card>
+          <div class="spot" [class]="'spot--' + toneFor(location)">
+            <header class="spot__head">
+              <span class="spot__icon">
+                <app-ui-icon name="car" [size]="20" />
+              </span>
+              <h2 class="spot__name">{{ location.locationName }}</h2>
+            </header>
+
+            <p class="spot__value">
+              <strong>{{ location.available }}</strong>
+              <span class="spot__total">espacios disponibles</span>
+            </p>
+
+            <p class="spot__hint">Ocupados: {{ location.occupied }} / {{ location.capacity }}</p>
+          </div>
+        </app-ui-card>
+      }
+
+      @if (result(); as movement) {
+        <app-ui-card>
+          <div class="result" [class.result--rejected]="!movement.authorized">
+            <span class="result__icon">
+              <app-ui-icon [name]="resultIcon(movement.result)" [size]="22" />
+            </span>
+
+            <h2 class="result__message">{{ movement.message }}</h2>
+
+            <dl class="result__details">
+              @if (movement.vehicle; as vehicle) {
+                <div class="result__detail">
+                  <dt>Vehículo</dt>
+                  <dd>{{ vehicle.numberPlate }} · {{ vehicle.vehicleType }}</dd>
+                </div>
+              }
+
+              @if (movement.applicant; as applicant) {
+                <div class="result__detail">
+                  <dt>Propietario</dt>
+                  <dd>
+                    {{ applicant.nameApplicant }} {{ applicant.lastNameApplicant }} ({{
+                      applicant.usernameApplicant
+                    }})
+                  </dd>
+                </div>
+              }
+
+              @if (movement.location; as location) {
+                <div class="result__detail">
+                  <dt>Sede</dt>
+                  <dd>{{ location.nameLocation }}</dd>
+                </div>
+              }
+
+              @if (movement.record; as record) {
+                <div class="result__detail">
+                  <dt>{{ record.departureDate ? 'Salida' : 'Ingreso' }}</dt>
+                  <dd>
+                    {{ (record.departureDate ?? record.entryDate) | date: 'dd MMM yyyy, HH:mm' }}
+                  </dd>
+                </div>
+              }
+            </dl>
+          </div>
+        </app-ui-card>
+      }
+    </div>
+  </div>
+}

@@ -1,10 +1,50 @@
 import { WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { EMPTY } from 'rxjs';
 import { AuthService } from '../../../../core/auth/auth.service';
+import { CampusAvailability } from '../../../../core/control/models/parking-availability.model';
+import { ParkingAvailabilityService } from '../../../../core/control/parking-availability.service';
 import { ParkingReviewService } from '../../../../core/parking/parking-review.service';
 import { VehicleUnassignmentService } from '../../../../core/parking/vehicle-unassignment.service';
 import { HomePage } from './home-page';
+
+const LIMA_CENTRO: CampusAvailability = {
+  campusId: 1,
+  campusName: 'Lima Centro',
+  capacity: 225,
+  occupied: 152,
+  available: 73,
+  locations: [
+    {
+      locationId: 1,
+      locationName: 'Sede Arequipa',
+      campusId: 1,
+      campusName: 'Lima Centro',
+      capacity: 75,
+      occupied: 43,
+      available: 32,
+    },
+    {
+      locationId: 2,
+      locationName: 'Sede Petit Thouars',
+      campusId: 1,
+      campusName: 'Lima Centro',
+      capacity: 70,
+      occupied: 29,
+      available: 41,
+    },
+    {
+      locationId: 3,
+      locationName: 'Sede Pacífico',
+      campusId: 1,
+      campusName: 'Lima Centro',
+      capacity: 80,
+      occupied: 80,
+      available: 0,
+    },
+  ],
+};
 
 describe('HomePage', () => {
   let fixture: ComponentFixture<HomePage>;
@@ -55,6 +95,17 @@ describe('HomePage', () => {
             acceptorIsLoading: signal(false),
           },
         },
+        {
+          provide: ParkingAvailabilityService,
+          useValue: {
+            campuses: signal([LIMA_CENTRO]),
+            totalAvailable: signal(73),
+            isLoading: signal(false),
+            hasFailed: signal(false),
+            connectionStatus: signal('connected'),
+            realtimeUpdates: () => EMPTY,
+          },
+        },
       ],
     });
   });
@@ -72,15 +123,29 @@ describe('HomePage', () => {
     build();
 
     expect(spots().length).toBe(3);
-    expect(spots()[0].textContent).toContain('Lima Centro');
-    expect(spots()[0].textContent).toContain('42');
-    expect(spots()[0].textContent).toContain('de 120');
+    expect(spots()[0].textContent).toContain('Sede Arequipa');
+    expect(spots()[0].textContent).toContain('32');
+    expect(spots()[0].textContent).toContain('de 75');
+    expect(spots()[0].textContent).toContain('Ocupados: 43 / 75');
+  });
+
+  it('agrupa las sedes bajo su campus', () => {
+    build();
+
+    expect(text()).toContain('Lima Centro');
+    expect(host().querySelectorAll('.availability__campus').length).toBe(1);
+  });
+
+  it('informa que la disponibilidad se actualiza en tiempo real', () => {
+    build();
+
+    expect(text()).toContain('Actualizando en tiempo real');
   });
 
   it('resume el total de espacios libres', () => {
     build();
 
-    expect(text()).toContain('60 espacios libres');
+    expect(text()).toContain('73 espacios libres');
   });
 
   it('destaca la sede que se quedó sin espacios', () => {
@@ -173,5 +238,25 @@ describe('HomePage', () => {
     build();
 
     expect(spots().length).toBe(3);
+  });
+
+  it('muestra los estacionamientos disponibles a Personal de Seguridad', () => {
+    roles.set(['ROLE_SECURITY']);
+    build();
+
+    expect(spots().length).toBe(3);
+    expect(text()).toContain('Estacionamientos disponibles');
+  });
+
+  it('ofrece el control de acceso a Personal de Seguridad', () => {
+    roles.set(['ROLE_SECURITY']);
+    build();
+
+    const control = [...host().querySelectorAll<HTMLAnchorElement>('a.action')].find((action) =>
+      action.textContent?.includes('Control de acceso'),
+    );
+
+    expect(control).toBeDefined();
+    expect(control?.getAttribute('href')).toBe('/control-acceso');
   });
 });

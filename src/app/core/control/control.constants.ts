@@ -1,0 +1,19 @@
+import { PARKING_API_PATH } from '../parking/parking.constants';
+
+export const PARKING_CONTROL_PATH = `${PARKING_API_PATH}/control`;
+
+export const PARKING_AVAILABILITY_PATH = `${PARKING_CONTROL_PATH}/availability`;
+
+export const PARKING_AVAILABILITY_SOCKET_PATH = `${PARKING_AVAILABILITY_PATH}/ws`;
+
+export const PARKING_ENTRY_PATH = `${PARKING_CONTROL_PATH}/entry`;
+
+export const PARKING_EXIT_PATH = `${PARKING_CONTROL_PATH}/exit`;
+
+export const AVAILABILITY_LOW_RATIO = 0.15;
+
+export const AVAILABILITY_MEDIUM_RATIO = 0.4;
+
+export const REALTIME_RECONNECT_BASE_DELAY_MS = 1000;
+
+export const REALTIME_RECONNECT_MAX_DELAY_MS = 30000;

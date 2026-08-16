@@ -1,50 +1,86 @@
-@if (isApplicant()) {
+@if (isApplicant() || isSecurity()) {
   <section class="availability" aria-labelledby="availability-title">
     <div class="availability__head">
       <h1 id="availability-title" class="availability__title">Estacionamientos disponibles</h1>
       <p class="availability__subtitle">
-        {{ totalAvailableSpaces }} espacios libres en este momento entre todas las sedes.
+        @if (availabilityLoading() && !hasAvailability()) {
+          Consultando la disponibilidad de las sedes…
+        } @else if (availabilityFailed() && !hasAvailability()) {
+          No pudimos obtener la disponibilidad en este momento. Inténtalo nuevamente en unos
+          minutos.
+        } @else {
+          {{ totalAvailableSpaces() }} espacios libres en este momento entre todas las sedes.
+        }
       </p>
-    </div>
 
-    <div class="availability__grid">
-      @for (location of availability; track location.idLocation) {
-        <app-ui-card>
-          <div class="spot" [class]="'spot--' + availabilityTone(location)">
-            <header class="spot__head">
-              <span class="spot__icon">
-                <app-ui-icon name="car" [size]="20" />
-              </span>
-              <h2 class="spot__name">{{ location.nameLocation }}</h2>
-            </header>
-
-            <p class="spot__value">
-              <strong>{{ location.availableSpaces }}</strong>
-              <span class="spot__total">de {{ location.totalSpaces }}</span>
-            </p>
-
-            <div
-              class="spot__meter"
-              role="progressbar"
-              [attr.aria-valuenow]="location.availableSpaces"
-              [attr.aria-valuemin]="0"
-              [attr.aria-valuemax]="location.totalSpaces"
-              [attr.aria-label]="'Espacios disponibles en ' + location.nameLocation"
-            >
-              <span class="spot__meter-fill" [style.width.%]="occupancyFor(location)"></span>
-            </div>
-
-            <p class="spot__hint">
-              @if (location.availableSpaces === 0) {
-                Sin espacios disponibles
-              } @else {
-                {{ occupancyFor(location) }}% de la capacidad libre
-              }
-            </p>
-          </div>
-        </app-ui-card>
+      @if (hasAvailability()) {
+        <p class="availability__realtime" [class]="'availability__realtime--' + connectionStatus()">
+          <span class="availability__realtime-dot" aria-hidden="true"></span>
+          @switch (connectionStatus()) {
+            @case ('connected') {
+              Actualizando en tiempo real
+            }
+            @case ('reconnecting') {
+              Reconectando…
+            }
+            @case ('connecting') {
+              Conectando…
+            }
+            @default {
+              Sin actualización automática
+            }
+          }
+        </p>
       }
     </div>
+
+    @for (campus of campuses(); track campus.campusId) {
+      <div class="availability__campus">
+        <h2 class="availability__campus-name">{{ campus.campusName }}</h2>
+        <p class="availability__campus-total">
+          {{ campus.available }} de {{ campus.capacity }} espacios libres
+        </p>
+
+        <div class="availability__grid">
+          @for (location of campus.locations; track location.locationId) {
+            <app-ui-card>
+              <div class="spot" [class]="'spot--' + availabilityTone(location)">
+                <header class="spot__head">
+                  <span class="spot__icon">
+                    <app-ui-icon name="car" [size]="20" />
+                  </span>
+                  <h3 class="spot__name">{{ location.locationName }}</h3>
+                </header>
+
+                <p class="spot__value">
+                  <strong>{{ location.available }}</strong>
+                  <span class="spot__total">de {{ location.capacity }}</span>
+                </p>
+
+                <div
+                  class="spot__meter"
+                  role="progressbar"
+                  [attr.aria-valuenow]="location.available"
+                  [attr.aria-valuemin]="0"
+                  [attr.aria-valuemax]="location.capacity"
+                  [attr.aria-label]="'Espacios disponibles en ' + location.locationName"
+                >
+                  <span class="spot__meter-fill" [style.width.%]="freeRatioFor(location)"></span>
+                </div>
+
+                <p class="spot__hint">
+                  @if (location.available === 0) {
+                    Sin espacios disponibles
+                  } @else {
+                    Ocupados: {{ location.occupied }} / {{ location.capacity }}
+                  }
+                </p>
+              </div>
+            </app-ui-card>
+          }
+        </div>
+      </div>
+    }
   </section>
 }
 
