@@ -1,41 +1,176 @@
+@use 'styles/breakpoints' as bp;
+
 :host {
+  --alert-accent: var(--color-primary);
+  --alert-bg: var(--color-primary-softer);
+  --alert-border: color-mix(in srgb, var(--color-primary) 22%, transparent);
+
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+  padding-inline-start: calc(var(--space-4) + 4px);
+  border: 1px solid var(--alert-border);
+  border-radius: var(--radius-md);
+  background-image: linear-gradient(
+    135deg,
+    var(--alert-bg),
+    color-mix(in srgb, var(--color-surface) 60%, var(--alert-bg))
+  );
+  box-shadow: var(--shadow-xs);
   font-size: var(--text-base);
-  line-height: var(--leading-normal);
-}
-
-app-ui-icon {
-  margin-top: 0.125rem;
-}
-
-.ui-alert__content {
-  min-width: 0;
-}
-
-:host(.ui-alert--info) {
-  background-color: var(--color-info-bg);
-  border-color: color-mix(in srgb, var(--color-primary) 22%, transparent);
+  line-height: var(--leading-relaxed);
   color: var(--color-text);
+  overflow: hidden;
+  animation: ui-alert-in var(--transition-base) both;
 
-  app-ui-icon {
-    color: var(--color-primary);
+  &::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 4px;
+    background-color: var(--alert-accent);
+  }
+
+  @include bp.respond-down(bp.$breakpoint-mobile) {
+    padding: var(--space-3);
+    padding-inline-start: calc(var(--space-3) + 4px);
   }
 }
 
+.ui-alert__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface);
+  box-shadow:
+    inset 0 0 0 1px var(--alert-border),
+    var(--shadow-xs);
+  color: var(--alert-accent);
+}
+
+.ui-alert__content {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-block-start: 0.1875rem;
+  overflow-wrap: anywhere;
+
+  strong {
+    font-weight: 700;
+    color: var(--alert-accent);
+  }
+
+  a {
+    font-weight: 700;
+    color: var(--alert-accent);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+  }
+}
+
+.ui-alert__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--alert-accent);
+  cursor: pointer;
+  opacity: 0.7;
+  transition:
+    opacity var(--transition-fast),
+    border-color var(--transition-fast),
+    background-color var(--transition-fast);
+
+  &:hover {
+    opacity: 1;
+    border-color: var(--alert-border);
+    background-color: var(--color-surface);
+  }
+
+  &:focus-visible {
+    outline: none;
+    opacity: 1;
+    border-color: var(--alert-accent);
+  }
+}
+
+:host(.ui-alert--leaving) {
+  pointer-events: none;
+  animation: ui-alert-out 240ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+:host(.ui-alert--dismissed) {
+  display: none;
+}
+
+:host(.ui-alert--info) {
+  --alert-accent: var(--color-primary);
+  --alert-bg: var(--color-primary-soft);
+  --alert-border: color-mix(in srgb, var(--color-primary) 22%, transparent);
+}
+
 :host(.ui-alert--success) {
-  background-color: var(--color-success-bg);
-  border-color: color-mix(in srgb, var(--color-success) 25%, transparent);
-  color: var(--color-success);
+  --alert-accent: var(--color-success);
+  --alert-bg: var(--color-success-bg);
+  --alert-border: color-mix(in srgb, var(--color-success) 28%, transparent);
 }
 
 :host(.ui-alert--danger) {
-  background-color: var(--color-danger-bg);
-  border-color: var(--color-danger-border);
-  color: var(--color-danger);
-  font-weight: 700;
+  --alert-accent: var(--color-danger);
+  --alert-bg: var(--color-danger-bg);
+  --alert-border: var(--color-danger-border);
+}
+
+@keyframes ui-alert-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ui-alert-out {
+  0% {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+
+  60% {
+    opacity: 0.15;
+    transform: translateY(-0.25rem) scale(0.985);
+    filter: blur(1px);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-0.5rem) scale(0.97);
+    filter: blur(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host {
+    animation: none;
+  }
+
+  :host(.ui-alert--leaving) {
+    animation: ui-alert-out 1ms linear forwards;
+  }
 }

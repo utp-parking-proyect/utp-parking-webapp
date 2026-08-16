@@ -1,0 +1,33 @@
+<header class="timeline__head">
+  <h2 class="timeline__title">
+    <app-ui-icon name="history" [size]="18" />
+    <span>Historial de la solicitud</span>
+  </h2>
+
+  <button
+    type="button"
+    class="timeline__order"
+    [attr.aria-label]="'Ordenar historial. Actualmente: ' + orderLabel()"
+    (click)="toggleOrder()"
+  >
+    <app-ui-icon name="refresh" [size]="14" />
+    <span>{{ orderLabel() }}</span>
+  </button>
+</header>
+
+<ol class="timeline">
+  @for (entry of sortedEntries(); track $index) {
+    <li class="timeline__item">
+      <div class="timeline__marker" aria-hidden="true"></div>
+      <div class="timeline__body">
+        <p class="timeline__status">{{ entry.status | statusLabel }}</p>
+        @if (entryDate(entry); as changedAt) {
+          <p class="timeline__date">{{ changedAt | date: 'dd MMM yyyy, HH:mm' }}</p>
+        }
+        @if (entry.observation) {
+          <p class="timeline__observation">{{ entry.observation }}</p>
+        }
+      </div>
+    </li>
+  }
+</ol>

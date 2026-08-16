@@ -1,0 +1,192 @@
+<a class="page-back" routerLink="/solicitudes">
+  <app-ui-icon name="arrow-left" [size]="16" />
+  <span>Volver a mis solicitudes</span>
+</a>
+
+@if (isLoading()) {
+  <app-ui-card>
+    <p class="state">
+      <span class="state__spinner" aria-hidden="true"></span>
+      <span>Cargando la solicitud…</span>
+    </p>
+  </app-ui-card>
+} @else if (hasFailed()) {
+  <app-ui-card>
+    <app-ui-alert tone="danger">
+      No fue posible cargar la solicitud. Inténtalo nuevamente en unos minutos.
+    </app-ui-alert>
+  </app-ui-card>
+} @else if (request(); as request) {
+  <header class="page-header">
+    <div>
+      <h1 class="page-header__title">Solicitud #{{ request.idRequest }}</h1>
+      <p class="page-header__subtitle">
+        Detalle de tu solicitud de ingreso a los estacionamientos de la UTP.
+      </p>
+    </div>
+    <app-ui-badge [tone]="statusTone()">{{ request.status | statusLabel }}</app-ui-badge>
+  </header>
+
+  @if (successMessage(); as message) {
+    <div class="detail__feedback">
+      <app-ui-alert tone="success" (closed)="successMessage.set(null)">{{ message }}</app-ui-alert>
+    </div>
+  }
+
+  @if (errorMessage(); as message) {
+    <div class="detail__feedback">
+      <app-ui-alert tone="danger" (closed)="errorMessage.set(null)">{{ message }}</app-ui-alert>
+    </div>
+  }
+
+  @if (decision(); as decision) {
+    <section
+      class="decision"
+      [class.decision--rejected]="isRejected()"
+      aria-labelledby="decision-title"
+    >
+      <h2 class="decision__title" id="decision-title">
+        <span class="decision__icon" aria-hidden="true">
+          <app-ui-icon [name]="isRejected() ? 'alert-triangle' : 'check-circle'" [size]="18" />
+        </span>
+        <span>{{ isRejected() ? 'Motivo del rechazo' : 'Comentario de la revisión' }}</span>
+      </h2>
+
+      <blockquote class="decision__comment">{{ decision.observation }}</blockquote>
+
+      <p class="decision__meta">
+        <app-ui-icon name="clock" [size]="14" />
+        <span>
+          {{ decision.status | statusLabel }}
+          @if (entryDate(decision); as changedAt) {
+            · {{ changedAt | date: 'dd MMM yyyy, HH:mm' }}
+          }
+        </span>
+      </p>
+    </section>
+  }
+
+  <div class="detail">
+    <app-ui-card class="detail__panel">
+      <h2 class="detail__title">
+        <app-ui-icon name="clipboard" [size]="18" />
+        <span>Solicitud</span>
+      </h2>
+
+      <dl class="detail__data">
+        <div class="detail__row">
+          <dt>N.° de solicitud</dt>
+          <dd>#{{ request.idRequest }}</dd>
+        </div>
+        <div class="detail__row">
+          <dt>Ciclo</dt>
+          <dd>{{ request.applicant.numberCycle || '—' }}</dd>
+        </div>
+        <div class="detail__row">
+          <dt>Fecha de solicitud</dt>
+          <dd>
+            @if (dateRequest(); as dateRequest) {
+              {{ dateRequest | date: 'dd MMM yyyy, HH:mm' }}
+            } @else {
+              &mdash;
+            }
+          </dd>
+        </div>
+        <div class="detail__row">
+          <dt>Fecha de respuesta</dt>
+          <dd>
+            @if (dateResponse(); as dateResponse) {
+              {{ dateResponse | date: 'dd MMM yyyy, HH:mm' }}
+            } @else {
+              Pendiente
+            }
+          </dd>
+        </div>
+      </dl>
+    </app-ui-card>
+
+    <app-ui-card class="detail__panel">
+      <h2 class="detail__title">
+        <app-ui-icon [name]="vehicleIcon()" [size]="18" />
+        <span>Vehículo</span>
+      </h2>
+
+      <dl class="detail__data">
+        <div class="detail__row">
+          <dt>Placa</dt>
+          <dd class="detail__plate">{{ request.vehicle.numberPlate }}</dd>
+        </div>
+        <div class="detail__row">
+          <dt>Tipo</dt>
+          <dd>{{ request.vehicle.vehicleType || '—' }}</dd>
+        </div>
+      </dl>
+    </app-ui-card>
+
+    @if (request.workflow.length) {
+      <app-ui-card class="detail__panel detail__panel--wide">
+        <app-request-timeline [entries]="request.workflow" />
+      </app-ui-card>
+    }
+  </div>
+
+  @if (canResubmit()) {
+    <div class="actions">
+      <app-ui-button size="lg" [disabled]="submitting()" (click)="openResubmit()">
+        <app-ui-icon name="refresh" [size]="18" />
+        Reenviar solicitud
+      </app-ui-button>
+    </div>
+  } @else if (isRejected()) {
+    <div class="actions">
+      <app-ui-alert tone="info">
+        Esta solicitud pertenece al ciclo {{ request.applicant.numberCycle }} y ya no puede
+        reenviarse. Registra una nueva solicitud para el ciclo vigente.
+      </app-ui-alert>
+    </div>
+  }
+
+  @if (confirming()) {
+    <app-ui-dialog
+      title="¿Deseas reenviar esta solicitud?"
+      description="Tu solicitud volverá al proceso de revisión del personal SAE."
+      [busy]="submitting()"
+      (closed)="cancelResubmit()"
+    >
+      <form [formGroup]="resubmitForm" (ngSubmit)="confirmResubmit()" novalidate>
+        <app-ui-form-field
+          label="Observación (opcional)"
+          inputId="detail-resubmit-observation"
+          hint="Cuéntale al personal SAE qué corregiste. Máximo 500 caracteres."
+        >
+          <textarea
+            id="detail-resubmit-observation"
+            class="ui-input"
+            rows="3"
+            maxlength="500"
+            placeholder="Documentación corregida…"
+            formControlName="observation"
+          ></textarea>
+        </app-ui-form-field>
+      </form>
+
+      <div dialogActions class="dialog__buttons">
+        <app-ui-button variant="secondary" [disabled]="submitting()" (click)="cancelResubmit()">
+          Cancelar
+        </app-ui-button>
+        <app-ui-button [loading]="submitting()" (click)="confirmResubmit()">Reenviar</app-ui-button>
+      </div>
+    </app-ui-dialog>
+  }
+} @else {
+  <app-ui-card>
+    <div class="empty">
+      <span class="empty__icon">
+        <app-ui-icon name="clipboard" [size]="26" />
+      </span>
+      <h2 class="empty__title">No encontramos esta solicitud</h2>
+      <p class="empty__description">Puede que no exista o que no te pertenezca.</p>
+      <app-ui-button size="lg" routerLink="/solicitudes">Ver mis solicitudes</app-ui-button>
+    </div>
+  </app-ui-card>
+}

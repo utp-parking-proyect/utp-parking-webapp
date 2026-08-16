@@ -27,7 +27,13 @@ export type IconName =
   | 'shield-check'
   | 'help-circle'
   | 'lock-closed'
-  | 'sparkles';
+  | 'sparkles'
+  | 'inbox'
+  | 'refresh'
+  | 'message-square'
+  | 'search'
+  | 'motorcycle'
+  | 'pickup';
 
 @Component({
   selector: 'app-ui-icon',

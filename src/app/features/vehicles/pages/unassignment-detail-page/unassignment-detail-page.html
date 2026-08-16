@@ -1,0 +1,300 @@
+<a class="page-back" [routerLink]="backRoute()">
+  <app-ui-icon name="arrow-left" [size]="16" />
+  <span>{{ backLabel() }}</span>
+</a>
+
+@if (isLoading()) {
+  <app-ui-card>
+    <p class="state">
+      <span class="state__spinner" aria-hidden="true"></span>
+      <span>Cargando la solicitud…</span>
+    </p>
+  </app-ui-card>
+} @else if (hasFailed()) {
+  <app-ui-card>
+    <app-ui-alert tone="danger">
+      No fue posible cargar la solicitud. Inténtalo nuevamente en unos minutos.
+    </app-ui-alert>
+    <div class="state__actions">
+      <app-ui-button variant="secondary" (click)="reload()">Reintentar</app-ui-button>
+    </div>
+  </app-ui-card>
+} @else if (request(); as request) {
+  <header class="page-header">
+    <div>
+      <h1 class="page-header__title">Desasignación #{{ request.idUnassignmentRequest }}</h1>
+      <p class="page-header__subtitle">
+        @if (isReview()) {
+          Revisa la información del solicitante y su vehículo antes de responder.
+        } @else {
+          Detalle de tu solicitud para dejar de ser propietario de este vehículo.
+        }
+      </p>
+    </div>
+    <app-ui-badge [tone]="statusTone()">{{ request.status | statusLabel }}</app-ui-badge>
+  </header>
+
+  @if (errorMessage(); as message) {
+    <div class="detail__feedback">
+      <app-ui-alert tone="danger" (closed)="errorMessage.set(null)">{{ message }}</app-ui-alert>
+    </div>
+  }
+
+  @if (decision(); as decision) {
+    <section
+      class="decision"
+      [class.decision--rejected]="isRejected()"
+      aria-labelledby="decision-title"
+    >
+      <h2 class="decision__title" id="decision-title">
+        <span class="decision__icon" aria-hidden="true">
+          <app-ui-icon [name]="isRejected() ? 'alert-triangle' : 'check-circle'" [size]="18" />
+        </span>
+        <span>{{ isRejected() ? 'Motivo del rechazo' : 'Comentario de la revisión' }}</span>
+      </h2>
+
+      <blockquote class="decision__comment">{{ decision.observation }}</blockquote>
+
+      <p class="decision__meta">
+        <app-ui-icon name="clock" [size]="14" />
+        <span>
+          {{ decision.status | statusLabel }}
+          @if (entryDate(decision); as changedAt) {
+            · {{ changedAt | date: 'dd MMM yyyy, HH:mm' }}
+          }
+        </span>
+      </p>
+    </section>
+  }
+
+  <div class="detail">
+    @if (isReview()) {
+      <app-ui-card class="detail__panel">
+        <h2 class="detail__title">
+          <app-ui-icon name="user" [size]="18" />
+          <span>Solicitante</span>
+        </h2>
+
+        <div class="detail__identity">
+          <app-user-avatar [name]="applicantName()" [size]="48" />
+          <div>
+            <strong class="detail__name">{{ applicantName() || '—' }}</strong>
+            <span class="detail__muted">{{ request.applicant.usernameApplicant }}</span>
+          </div>
+        </div>
+
+        <dl class="detail__data">
+          @if (applicantProfile(); as profile) {
+            <div class="detail__row">
+              <dt>DNI</dt>
+              <dd>{{ profile.dni || '—' }}</dd>
+            </div>
+            <div class="detail__row">
+              <dt>Correo institucional</dt>
+              <dd>{{ profile.institutionalEmail || '—' }}</dd>
+            </div>
+            <div class="detail__row">
+              <dt>Carrera</dt>
+              <dd>{{ profile.career || '—' }}</dd>
+            </div>
+            <div class="detail__row">
+              <dt>Campus</dt>
+              <dd>{{ profile.campus?.nameCampus ?? 'Sin campus asignado' }}</dd>
+            </div>
+          } @else if (applicantFailed()) {
+            <p class="detail__muted">
+              No fue posible cargar los datos adicionales del solicitante.
+            </p>
+          } @else {
+            <p class="detail__muted">Cargando los datos del solicitante…</p>
+          }
+        </dl>
+      </app-ui-card>
+    }
+
+    <app-ui-card class="detail__panel">
+      <h2 class="detail__title">
+        <app-ui-icon [name]="vehicleIcon()" [size]="18" />
+        <span>Vehículo</span>
+      </h2>
+
+      <dl class="detail__data">
+        <div class="detail__row">
+          <dt>Placa</dt>
+          <dd class="detail__plate">{{ request.vehicle.numberPlate }}</dd>
+        </div>
+        <div class="detail__row">
+          <dt>Tipo</dt>
+          <dd>{{ request.vehicle.vehicleType || '—' }}</dd>
+        </div>
+      </dl>
+    </app-ui-card>
+
+    <app-ui-card class="detail__panel" [class.detail__panel--wide]="isReview()">
+      <h2 class="detail__title">
+        <app-ui-icon name="clipboard" [size]="18" />
+        <span>Solicitud</span>
+      </h2>
+
+      <dl class="detail__data" [class.detail__data--grid]="isReview()">
+        <div class="detail__row">
+          <dt>N.° de solicitud</dt>
+          <dd>#{{ request.idUnassignmentRequest }}</dd>
+        </div>
+        <div class="detail__row">
+          <dt>Fecha de solicitud</dt>
+          <dd>
+            @if (dateRequest(); as dateRequest) {
+              {{ dateRequest | date: 'dd MMM yyyy, HH:mm' }}
+            } @else {
+              &mdash;
+            }
+          </dd>
+        </div>
+        <div class="detail__row">
+          <dt>Fecha de respuesta</dt>
+          <dd>
+            @if (dateResponse(); as dateResponse) {
+              {{ dateResponse | date: 'dd MMM yyyy, HH:mm' }}
+            } @else {
+              Pendiente
+            }
+          </dd>
+        </div>
+        <div class="detail__row detail__row--reason">
+          <dt>Motivo</dt>
+          <dd>{{ request.reason }}</dd>
+        </div>
+      </dl>
+    </app-ui-card>
+
+    @if (request.workflow.length) {
+      <app-ui-card class="detail__panel detail__panel--wide">
+        <app-request-timeline [entries]="request.workflow" />
+      </app-ui-card>
+    }
+  </div>
+
+  @if (isReview()) {
+    @if (canRespond()) {
+      <div class="actions">
+        <app-ui-button size="lg" [disabled]="submitting()" (click)="openAccept()">
+          <app-ui-icon name="check-circle" [size]="18" />
+          Aceptar desasignación
+        </app-ui-button>
+        <app-ui-button variant="danger" size="lg" [disabled]="submitting()" (click)="openReject()">
+          <app-ui-icon name="x" [size]="18" />
+          Rechazar desasignación
+        </app-ui-button>
+      </div>
+    } @else {
+      <app-ui-alert tone="info">
+        Esta solicitud ya fue respondida y no admite cambios.
+      </app-ui-alert>
+    }
+  }
+} @else if (notFound()) {
+  <app-ui-card>
+    <div class="empty">
+      <span class="empty__icon">
+        <app-ui-icon name="help-circle" [size]="26" />
+      </span>
+      <h2 class="empty__title">No encontramos esta solicitud</h2>
+      <p class="empty__description">
+        @if (isReview()) {
+          Es posible que no exista o que no esté asignada a ti. Revisa tu bandeja de
+          desasignaciones.
+        } @else {
+          Es posible que no exista o que no te pertenezca. Revisa el listado de tus solicitudes.
+        }
+      </p>
+      <app-ui-button size="lg" [routerLink]="backRoute()">{{ backLabel() }}</app-ui-button>
+    </div>
+  </app-ui-card>
+}
+
+@if (action() === 'approve') {
+  <app-ui-dialog
+    title="¿Aceptar la desasignación?"
+    description="El vehículo dejará de pertenecer al solicitante y ya no contará entre sus vehículos. Sus solicitudes anteriores y su historial se conservan."
+    [busy]="submitting()"
+    (closed)="closeDialog()"
+  >
+    @if (request(); as request) {
+      <dl class="dialog__summary">
+        <div>
+          <dt>Solicitante</dt>
+          <dd>{{ applicantName() || '—' }}</dd>
+        </div>
+        <div>
+          <dt>Placa</dt>
+          <dd>{{ request.vehicle.numberPlate }}</dd>
+        </div>
+      </dl>
+    }
+
+    <div dialogActions class="dialog__buttons">
+      <app-ui-button variant="secondary" [disabled]="submitting()" (click)="closeDialog()">
+        Cancelar
+      </app-ui-button>
+      <app-ui-button [loading]="submitting()" [disabled]="submitting()" (click)="confirmAccept()">
+        {{ submitting() ? 'Procesando…' : 'Aceptar' }}
+      </app-ui-button>
+    </div>
+  </app-ui-dialog>
+}
+
+@if (action() === 'reject') {
+  <app-ui-dialog
+    title="Rechazar la desasignación"
+    description="El vehículo seguirá perteneciendo al solicitante. Indica el motivo del rechazo para que pueda verlo."
+    tone="danger"
+    [busy]="submitting()"
+    (closed)="closeDialog()"
+  >
+    @if (request(); as request) {
+      <dl class="dialog__summary">
+        <div>
+          <dt>Solicitante</dt>
+          <dd>{{ applicantName() || '—' }}</dd>
+        </div>
+        <div>
+          <dt>Placa</dt>
+          <dd>{{ request.vehicle.numberPlate }}</dd>
+        </div>
+      </dl>
+    }
+
+    <form class="dialog__form" [formGroup]="rejectionForm" (ngSubmit)="confirmReject()" novalidate>
+      <app-ui-form-field
+        label="Motivo del rechazo"
+        inputId="unassignment-rejection"
+        hint="Obligatorio al rechazar. Máximo 500 caracteres."
+        [error]="commentError()"
+      >
+        <textarea
+          id="unassignment-rejection"
+          class="ui-input"
+          rows="3"
+          maxlength="500"
+          placeholder="El vehículo tiene una solicitud vigente…"
+          formControlName="comment"
+        ></textarea>
+      </app-ui-form-field>
+    </form>
+
+    <div dialogActions class="dialog__buttons">
+      <app-ui-button variant="secondary" [disabled]="submitting()" (click)="closeDialog()">
+        Cancelar
+      </app-ui-button>
+      <app-ui-button
+        variant="danger"
+        [loading]="submitting()"
+        [disabled]="submitting()"
+        (click)="confirmReject()"
+      >
+        {{ submitting() ? 'Procesando…' : 'Rechazar' }}
+      </app-ui-button>
+    </div>
+  </app-ui-dialog>
+}

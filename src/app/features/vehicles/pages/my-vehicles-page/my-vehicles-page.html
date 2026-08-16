@@ -1,0 +1,341 @@
+<header class="page-header">
+  <div>
+    <h1 class="page-header__title">Mis vehículos</h1>
+    <p class="page-header__subtitle">
+      Administra los vehículos con los que puedes solicitar el ingreso a los estacionamientos de la
+      UTP.
+      @if (maxAssignedVehicles(); as maxAssignedVehicles) {
+        <span class="page-header__counter">
+          Tienes {{ assignedVehicleCount() }} de {{ maxAssignedVehicles }} vehículos asignados.
+        </span>
+      }
+    </p>
+  </div>
+
+  <app-ui-button size="lg" [disabled]="hasReachedLimit() || isLoading()" (click)="openForm()">
+    <app-ui-icon name="plus-circle" [size]="18" />
+    Agregar vehículo
+  </app-ui-button>
+</header>
+
+@if (successMessage(); as message) {
+  <div class="feedback">
+    <app-ui-alert tone="success" (closed)="successMessage.set(null)">{{ message }}</app-ui-alert>
+  </div>
+}
+
+@if (errorMessage(); as message) {
+  <div class="feedback">
+    <app-ui-alert tone="danger" (closed)="errorMessage.set(null)">{{ message }}</app-ui-alert>
+  </div>
+}
+
+@if (hasReachedLimit() && !isLoading()) {
+  <div class="feedback">
+    <app-ui-alert tone="info">
+      Has alcanzado el máximo de {{ maxAssignedVehicles() }} vehículos asignados. Solicita la
+      desasignación de uno para liberar espacio: seguirá registrado y conservará su historial de
+      solicitudes.
+    </app-ui-alert>
+  </div>
+}
+
+@if (isLoading()) {
+  <app-ui-card>
+    <p class="state">
+      <span class="state__spinner" aria-hidden="true"></span>
+      <span>Cargando tus vehículos…</span>
+    </p>
+  </app-ui-card>
+} @else if (hasFailed()) {
+  <app-ui-card>
+    <app-ui-alert tone="danger">
+      No pudimos cargar tus vehículos. Inténtalo nuevamente en unos minutos.
+    </app-ui-alert>
+    <div class="state__actions">
+      <app-ui-button variant="secondary" (click)="reload()">Reintentar</app-ui-button>
+    </div>
+  </app-ui-card>
+} @else if (vehicles().length) {
+  <div class="vehicles">
+    @for (vehicle of vehicles(); track vehicle.idVehicle) {
+      <app-ui-card>
+        <div class="vehicle">
+          <header class="vehicle__head">
+            <span class="vehicle__icon">
+              <app-ui-icon [name]="iconFor(vehicle)" [size]="20" />
+            </span>
+
+            <div class="vehicle__identity">
+              <h2 class="vehicle__plate">{{ vehicle.numberPlate }}</h2>
+              <p class="vehicle__type">{{ vehicle.vehicleType }}</p>
+            </div>
+
+            <app-ui-badge tone="success">Asignado</app-ui-badge>
+          </header>
+
+          @if (accessFor(vehicle); as access) {
+            <div [class]="'vehicle__access vehicle__access--' + access.status">
+              <span class="vehicle__access-icon" aria-hidden="true">
+                <app-ui-icon [name]="accessIcon(access)" [size]="18" />
+              </span>
+
+              <div class="vehicle__access-body">
+                <p class="vehicle__access-title">
+                  <span>{{ accessLabel(access) }}</span>
+                  <app-ui-badge [tone]="accessTone(access)">
+                    {{ access.request ? (access.request.status | statusLabel) : 'Sin solicitud' }}
+                  </app-ui-badge>
+                </p>
+
+                <p class="vehicle__access-detail">
+                  @switch (access.status) {
+                    @case ('allowed') {
+                      Autorizado para ingresar a los estacionamientos en el ciclo
+                      {{ access.cycleName }}.
+                    }
+                    @case ('in-review') {
+                      Tu solicitud del ciclo {{ access.cycleName }} sigue en revisión. No se permite
+                      usar este vehículo hasta que el personal SAE la apruebe.
+                    }
+                    @case ('rejected') {
+                      Tu solicitud del ciclo {{ access.cycleName }} fue rechazada. No se permite
+                      usar este vehículo para ingresar.
+                    }
+                    @case ('no-request') {
+                      No tienes una solicitud aprobada en el ciclo {{ access.cycleName }}. No se
+                      permite usar este vehículo para ingresar.
+                    }
+                    @default {
+                      No pudimos verificar el permiso de ingreso de este vehículo. Vuelve a
+                      intentarlo en unos minutos.
+                    }
+                  }
+                </p>
+              </div>
+            </div>
+          }
+
+          <p class="vehicle__description">
+            Puedes seleccionarlo al registrar una nueva solicitud.
+          </p>
+
+          @if (hasOpenUnassignment(vehicle)) {
+            <div class="vehicle__unassignment vehicle__unassignment--pending">
+              <app-ui-icon name="clock" [size]="18" />
+              <span>
+                Solicitud de desasignación pendiente. El personal SAE la está revisando.
+              </span>
+            </div>
+          } @else if (rejectedUnassignmentFor(vehicle)) {
+            <div class="vehicle__unassignment vehicle__unassignment--rejected">
+              <app-ui-icon name="alert-triangle" [size]="18" />
+              <div>
+                <p class="vehicle__unassignment-title">Solicitud de desasignación rechazada</p>
+                @if (rejectionReasonFor(vehicle); as reason) {
+                  <p class="vehicle__unassignment-reason">Motivo del rechazo: {{ reason }}</p>
+                }
+              </div>
+            </div>
+          }
+
+          <div class="vehicle__actions">
+            <app-ui-button
+              variant="secondary"
+              [block]="true"
+              [disabled]="unassigning() || hasOpenUnassignment(vehicle)"
+              (click)="askUnassignment(vehicle)"
+            >
+              @if (hasOpenUnassignment(vehicle)) {
+                Desasignación pendiente
+              } @else {
+                Solicitar desasignación
+              }
+            </app-ui-button>
+          </div>
+        </div>
+      </app-ui-card>
+    }
+  </div>
+} @else {
+  <app-ui-card>
+    <div class="empty">
+      <span class="empty__icon">
+        <app-ui-icon name="car" [size]="26" />
+      </span>
+      <h2 class="empty__title">Aún no tienes vehículos registrados</h2>
+      <p class="empty__description">
+        Registra un vehículo para poder solicitar la autorización de ingreso al estacionamiento.
+      </p>
+      <app-ui-button size="lg" (click)="openForm()">Agregar vehículo</app-ui-button>
+    </div>
+  </app-ui-card>
+}
+
+@if (unassignedHistory().length) {
+  <section class="history">
+    <h2 class="history__title">Historial de vehículos</h2>
+    <p class="history__description">
+      Vehículos que dejaron de estar asignados a tu cuenta. Sus solicitudes anteriores se conservan
+      en tu historial de solicitudes.
+    </p>
+
+    <div class="history__items">
+      @for (item of unassignedHistory(); track item.idUnassignmentRequest) {
+        <app-ui-card>
+          <div class="history__item">
+            <span class="history__icon">
+              <app-ui-icon name="car" [size]="18" />
+            </span>
+
+            <div class="history__body">
+              <p class="history__plate">{{ item.vehicle.numberPlate }}</p>
+              <p class="history__type">{{ item.vehicle.vehicleType }}</p>
+              <p class="history__reason">Motivo: {{ item.reason }}</p>
+            </div>
+
+            <app-ui-badge tone="neutral">Desasignado</app-ui-badge>
+          </div>
+        </app-ui-card>
+      }
+    </div>
+  </section>
+}
+
+<p class="page-foot">
+  <a routerLink="/solicitudes/nueva">
+    <span>Ir a nueva solicitud</span>
+    <app-ui-icon name="chevron-right" [size]="16" />
+  </a>
+</p>
+
+@if (formOpen()) {
+  <app-ui-dialog
+    title="Agregar vehículo"
+    description="El vehículo quedará disponible para tus próximas solicitudes."
+    [busy]="registering()"
+    (closed)="closeForm()"
+  >
+    <form class="dialog__form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <app-ui-form-field
+        label="Tipo de vehículo"
+        inputId="new-vehicle-type"
+        [error]="errorFor('Selecciona el tipo de vehículo.')"
+      >
+        <select id="new-vehicle-type" class="ui-select" formControlName="vehicleType">
+          <option [ngValue]="null" disabled>Selecciona una opción</option>
+          @for (type of vehicleTypes; track type.idVehicleType) {
+            <option [ngValue]="type.idVehicleType">{{ type.name }}</option>
+          }
+        </select>
+        <span class="ui-affix">
+          <app-ui-icon name="chevron-down" [size]="18" />
+        </span>
+      </app-ui-form-field>
+
+      <app-ui-form-field
+        label="Placa"
+        inputId="new-vehicle-plate"
+        [hint]="'Ejemplo: ' + plateExample()"
+        [error]="plateError()"
+      >
+        <input
+          id="new-vehicle-plate"
+          class="ui-input"
+          type="text"
+          inputmode="text"
+          [attr.maxlength]="plateMaxLength"
+          autocomplete="off"
+          [placeholder]="plateExample()"
+          formControlName="numberPlate"
+          (input)="normalizePlate($event)"
+        />
+        <span class="ui-affix">
+          <app-ui-icon [name]="newVehicleIcon()" [size]="18" />
+        </span>
+      </app-ui-form-field>
+
+      @if (errorMessage(); as message) {
+        <app-ui-alert tone="danger" (closed)="errorMessage.set(null)">{{ message }}</app-ui-alert>
+      }
+    </form>
+
+    <div dialogActions class="dialog__buttons">
+      <app-ui-button variant="secondary" [disabled]="registering()" (click)="closeForm()">
+        Cancelar
+      </app-ui-button>
+      <app-ui-button [loading]="registering()" [disabled]="registering()" (click)="submit()">
+        {{ registering() ? 'Registrando…' : 'Registrar vehículo' }}
+      </app-ui-button>
+    </div>
+  </app-ui-dialog>
+}
+
+@if (unassignTarget(); as vehicle) {
+  <app-ui-dialog
+    title="Solicitar desasignación"
+    description="El vehículo dejará de pertenecerte solo si el personal SAE aprueba la solicitud. Sus solicitudes anteriores y su historial se conservan."
+    [busy]="unassigning()"
+    (closed)="cancelUnassignment()"
+  >
+    <dl class="dialog__summary">
+      <div>
+        <dt>Vehículo</dt>
+        <dd>{{ vehicle.numberPlate }}</dd>
+      </div>
+      <div>
+        <dt>Tipo</dt>
+        <dd>{{ vehicle.vehicleType }}</dd>
+      </div>
+    </dl>
+
+    @if (unassignTargetIsAuthorized()) {
+      <app-ui-alert tone="danger">
+        Este vehículo tiene una solicitud aprobada en el ciclo {{ currentCycleName() }}. Si el
+        personal SAE aprueba la desasignación, perderás la autorización de ingreso con este
+        vehículo.
+      </app-ui-alert>
+    }
+
+    <app-ui-alert tone="info">
+      Desasignar no repone tus solicitudes del ciclo: seguirás con {{ cycleRequests() }} de
+      {{ maxRequestsPerCycle }} utilizadas.
+    </app-ui-alert>
+
+    <form
+      class="dialog__form"
+      [formGroup]="unassignForm"
+      (ngSubmit)="confirmUnassignment()"
+      novalidate
+    >
+      <app-ui-form-field
+        label="Motivo"
+        inputId="unassignment-reason"
+        hint="Cuéntale al personal SAE por qué dejarás de usar este vehículo. Máximo 255 caracteres."
+        [error]="unassignReasonError()"
+      >
+        <textarea
+          id="unassignment-reason"
+          class="ui-input"
+          rows="3"
+          maxlength="255"
+          placeholder="Vendí el vehículo…"
+          formControlName="reason"
+        ></textarea>
+      </app-ui-form-field>
+    </form>
+
+    <div dialogActions class="dialog__buttons">
+      <app-ui-button variant="secondary" [disabled]="unassigning()" (click)="cancelUnassignment()">
+        Cancelar
+      </app-ui-button>
+      <app-ui-button
+        [loading]="unassigning()"
+        [disabled]="unassigning()"
+        (click)="confirmUnassignment()"
+      >
+        {{ unassigning() ? 'Enviando…' : 'Enviar solicitud' }}
+      </app-ui-button>
+    </div>
+  </app-ui-dialog>
+}

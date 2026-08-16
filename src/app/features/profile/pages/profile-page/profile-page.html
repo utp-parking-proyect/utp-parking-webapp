@@ -41,10 +41,12 @@
         <dt>Correo institucional</dt>
         <dd>{{ user.institutionalEmail }}</dd>
       </div>
-      <div class="session__row">
-        <dt>Carrera</dt>
-        <dd>{{ user.career }}</dd>
-      </div>
+      @if (user.career?.trim(); as career) {
+        <div class="session__row">
+          <dt>Carrera</dt>
+          <dd>{{ career }}</dd>
+        </div>
+      }
       <div class="session__row">
         <dt>Campus</dt>
         <dd>{{ campusName() ?? 'Sin campus asignado' }}</dd>

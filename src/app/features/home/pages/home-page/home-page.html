@@ -1,36 +1,191 @@
-<section class="hero">
-  <div class="hero__text">
-    <h1 class="hero__title">Bienvenido a UTP+ Parking</h1>
-    <p class="hero__subtitle">El portal de acceso a los estacionamientos de la universidad.</p>
-  </div>
+@if (isApplicant() || isSecurity()) {
+  <section class="availability" aria-labelledby="availability-title">
+    <div class="availability__head">
+      <h1 id="availability-title" class="availability__title">Estacionamientos disponibles</h1>
+      <p class="availability__subtitle">
+        @if (availabilityLoading() && !hasAvailability()) {
+          Consultando la disponibilidad de las sedes…
+        } @else if (availabilityFailed() && !hasAvailability()) {
+          No pudimos obtener la disponibilidad en este momento. Inténtalo nuevamente en unos
+          minutos.
+        } @else {
+          {{ totalAvailableSpaces() }} espacios libres en este momento entre todas las sedes.
+        }
+      </p>
 
-  <img
-    class="hero__illustration"
-    src="illustrations/parking-welcome.webp"
-    alt=""
-    width="960"
-    height="642"
-  />
-</section>
+      @if (hasAvailability()) {
+        <p class="availability__realtime" [class]="'availability__realtime--' + connectionStatus()">
+          <span class="availability__realtime-dot" aria-hidden="true"></span>
+          @switch (connectionStatus()) {
+            @case ('connected') {
+              Actualizando en tiempo real
+            }
+            @case ('reconnecting') {
+              Reconectando…
+            }
+            @case ('connecting') {
+              Conectando…
+            }
+            @default {
+              Sin actualización automática
+            }
+          }
+        </p>
+      }
+    </div>
 
-<section class="actions" aria-labelledby="actions-title">
-  <h2 id="actions-title" class="actions__title">¿Qué deseas hacer?</h2>
+    @for (campus of campuses(); track campus.campusId) {
+      <div class="availability__campus">
+        <h2 class="availability__campus-name">{{ campus.campusName }}</h2>
+        <p class="availability__campus-total">
+          {{ campus.available }} de {{ campus.capacity }} espacios libres
+        </p>
 
-  <div class="actions__grid">
-    @for (action of actions; track action.title) {
-      <a class="action" [routerLink]="action.route" [queryParams]="action.queryParams">
-        <app-ui-card>
-          <span class="action__icon">
-            <app-ui-icon [name]="action.icon" [size]="22" />
-          </span>
-          <h3 class="action__title">{{ action.title }}</h3>
-          <p class="action__description">{{ action.description }}</p>
-          <span class="action__cta">
-            {{ action.cta }}
-            <app-ui-icon name="arrow-right" [size]="16" />
-          </span>
-        </app-ui-card>
-      </a>
+        <div class="availability__grid">
+          @for (location of campus.locations; track location.locationId) {
+            <app-ui-card>
+              <div class="spot" [class]="'spot--' + availabilityTone(location)">
+                <header class="spot__head">
+                  <span class="spot__icon">
+                    <app-ui-icon name="car" [size]="20" />
+                  </span>
+                  <h3 class="spot__name">{{ location.locationName }}</h3>
+                </header>
+
+                <p class="spot__value">
+                  <strong>{{ location.available }}</strong>
+                  <span class="spot__total">de {{ location.capacity }}</span>
+                </p>
+
+                <div
+                  class="spot__meter"
+                  role="progressbar"
+                  [attr.aria-valuenow]="location.available"
+                  [attr.aria-valuemin]="0"
+                  [attr.aria-valuemax]="location.capacity"
+                  [attr.aria-label]="'Espacios disponibles en ' + location.locationName"
+                >
+                  <span class="spot__meter-fill" [style.width.%]="freeRatioFor(location)"></span>
+                </div>
+
+                <p class="spot__hint">
+                  @if (location.available === 0) {
+                    Sin espacios disponibles
+                  } @else {
+                    Ocupados: {{ location.occupied }} / {{ location.capacity }}
+                  }
+                </p>
+              </div>
+            </app-ui-card>
+          }
+        </div>
+      </div>
     }
-  </div>
-</section>
+  </section>
+}
+
+@if (isSae()) {
+  <section class="workload" aria-labelledby="workload-title">
+    <div class="workload__head">
+      @if (isApplicant()) {
+        <h2 id="workload-title" class="workload__title">Tu carga de hoy</h2>
+      } @else {
+        <h1 id="workload-title" class="workload__title workload__title--lead">Tu carga de hoy</h1>
+      }
+      <p class="workload__subtitle">
+        @if (workloadLoading()) {
+          Consultando las solicitudes asignadas a ti…
+        } @else if (pendingTotal() === 0) {
+          Estás al día: no tienes solicitudes pendientes de revisión.
+        } @else {
+          Tienes {{ pendingTotal() }}
+          {{ pendingTotal() === 1 ? 'solicitud asignada' : 'solicitudes asignadas' }} esperando tu
+          revisión.
+        }
+      </p>
+    </div>
+
+    <div class="workload__grid">
+      @for (stat of workload(); track stat.label) {
+        <a class="stat" [routerLink]="stat.route" [queryParams]="stat.queryParams">
+          <app-ui-card>
+            <div class="stat__body" [class]="'stat__body--' + stat.variant">
+              <span class="stat__icon">
+                <app-ui-icon [name]="stat.icon" [size]="20" />
+              </span>
+              <p class="stat__value">{{ workloadLoading() ? '—' : stat.value }}</p>
+              <p class="stat__label">{{ stat.label }}</p>
+              <p class="stat__hint">{{ stat.hint }}</p>
+            </div>
+          </app-ui-card>
+        </a>
+      }
+    </div>
+  </section>
+}
+
+@if (actions().length) {
+  <section class="actions" aria-labelledby="actions-title">
+    <h2 id="actions-title" class="actions__title">¿Qué deseas hacer?</h2>
+
+    <div class="actions__grid">
+      @for (action of actions(); track action.title) {
+        <a class="action" [routerLink]="action.route" [queryParams]="action.queryParams">
+          <app-ui-card>
+            <span class="action__icon">
+              <app-ui-icon [name]="action.icon" [size]="22" />
+            </span>
+            <h3 class="action__title">{{ action.title }}</h3>
+            <p class="action__description">{{ action.description }}</p>
+            <span class="action__cta">
+              {{ action.cta }}
+              <app-ui-icon name="arrow-right" [size]="16" />
+            </span>
+          </app-ui-card>
+        </a>
+      }
+    </div>
+  </section>
+}
+
+@if (isStudent()) {
+  <section class="platforms" aria-labelledby="platforms-title">
+    <h2 id="platforms-title" class="platforms__title">Tus plataformas digitales</h2>
+
+    <div class="platforms__grid">
+      @for (platform of platforms; track platform.name) {
+        <a
+          class="platform"
+          [href]="platform.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          [attr.aria-label]="platform.name + ': ' + platform.description"
+        >
+          <app-ui-card>
+            <div class="platform__body">
+              <img
+                class="platform__preview"
+                [src]="platform.preview"
+                alt=""
+                width="89"
+                height="76"
+                loading="lazy"
+              />
+
+              <div class="platform__text">
+                <img
+                  class="platform__logo"
+                  [src]="platform.logo"
+                  [alt]="platform.name"
+                  height="18"
+                  loading="lazy"
+                />
+                <p class="platform__description">{{ platform.description }}</p>
+              </div>
+            </div>
+          </app-ui-card>
+        </a>
+      }
+    </div>
+  </section>
+}

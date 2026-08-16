@@ -46,6 +46,16 @@
     </div>
   </app-ui-card>
 } @else {
+  @if (step() !== 'loading') {
+    <p class="quota">
+      <app-ui-icon name="clipboard" [size]="16" />
+      <span>
+        Has realizado {{ cycleRequests() }} de {{ maxRequestsPerCycle }} solicitudes para este
+        ciclo.
+      </span>
+    </p>
+  }
+
   <app-ui-card>
     @switch (step()) {
       @case ('loading') {
@@ -55,36 +65,60 @@
         </p>
       }
 
+      @case ('limit-reached') {
+        <div class="empty">
+          <span class="empty__icon">
+            <app-ui-icon name="clipboard" [size]="26" />
+          </span>
+          <h2 class="empty__title">Alcanzaste el máximo de solicitudes de este ciclo</h2>
+          <p class="empty__description">
+            Has alcanzado el máximo de {{ maxRequestsPerCycle }} solicitudes permitidas para este
+            ciclo. Podrás registrar nuevas solicitudes cuando inicie el siguiente ciclo.
+          </p>
+          <app-ui-button size="lg" routerLink="/solicitudes">Ver mis solicitudes</app-ui-button>
+        </div>
+      }
+
       @case ('select') {
         <p class="form__intro">
           Selecciona el vehículo con el que deseas solicitar autorización de ingreso.
         </p>
 
         <form class="form" [formGroup]="existingForm" (ngSubmit)="submit()" novalidate>
-          <app-ui-form-field
-            label="Vehículo registrado"
-            inputId="registered-vehicle"
-            hint="Solo se muestran los vehículos que ya usaste en una solicitud."
-          >
-            <select id="registered-vehicle" class="ui-select" formControlName="numberPlate">
-              @for (vehicle of vehicles(); track vehicle.numberPlate) {
-                <option [value]="vehicle.numberPlate">{{ vehicle.numberPlate }}</option>
-              }
-            </select>
-            <span class="ui-affix">
-              <app-ui-icon name="chevron-down" [size]="18" />
-            </span>
-          </app-ui-form-field>
+          <fieldset class="picker">
+            <legend class="picker__legend">Vehículo registrado</legend>
 
-          @if (selectedVehicle(); as vehicle) {
-            <p class="form__detail">
-              <span>Tipo de vehículo</span>
-              <strong>{{ vehicle.vehicleType }}</strong>
-            </p>
-          }
+            @for (vehicle of vehicles(); track vehicle.idVehicle) {
+              <label
+                class="picker__option"
+                [class.picker__option--selected]="selectedVehicle()?.idVehicle === vehicle.idVehicle"
+              >
+                <input
+                  class="picker__input"
+                  type="radio"
+                  formControlName="numberPlate"
+                  [value]="vehicle.numberPlate"
+                />
+
+                <span class="picker__icon">
+                  <app-ui-icon [name]="iconFor(vehicle)" [size]="20" />
+                </span>
+
+                <span class="picker__identity">
+                  <span class="picker__plate">{{ vehicle.numberPlate }}</span>
+                  <span class="picker__type">{{ vehicle.vehicleType }}</span>
+                  <span class="picker__state">Disponible</span>
+                </span>
+
+                <app-ui-badge tone="success">Seleccionable</app-ui-badge>
+              </label>
+            }
+          </fieldset>
 
           @if (errorMessage(); as message) {
-            <app-ui-alert tone="danger">{{ message }}</app-ui-alert>
+            <app-ui-alert tone="danger" (closed)="errorMessage.set(null)">{{
+              message
+            }}</app-ui-alert>
           }
 
           <div class="form__actions">
@@ -94,12 +128,20 @@
             <app-ui-button
               variant="ghost"
               size="lg"
-              [disabled]="submitting()"
+              [disabled]="submitting() || vehiclesLimitReached()"
               (click)="registerNewVehicle()"
             >
               Usar otro vehículo
             </app-ui-button>
           </div>
+
+          @if (vehiclesLimitReached()) {
+            <p class="form__note">
+              Has alcanzado el máximo de {{ maxAssignedVehicles() }} vehículos asignados. Solicita la
+              desasignación de uno en <a routerLink="/vehiculos">Mis vehículos</a> para registrar
+              otro.
+            </p>
+          }
         </form>
       }
 
@@ -108,6 +150,7 @@
           <span class="empty__icon">
             <app-ui-icon name="car" [size]="26" />
           </span>
+
           <h2 class="empty__title">No tienes vehículos registrados</h2>
           <p class="empty__description">
             Para realizar una solicitud necesitas registrar los datos del vehículo con el que
@@ -132,33 +175,6 @@
 
         <form class="form" [formGroup]="newVehicleForm" (ngSubmit)="submit()" novalidate>
           <app-ui-form-field
-            label="Placa"
-            inputId="number-plate"
-            hint="Ejemplo: ABC-123"
-            [error]="
-              errorFor(
-                newVehicleForm.controls.numberPlate,
-                'Ingresa una placa válida, como ABC-123.'
-              )
-            "
-          >
-            <input
-              id="number-plate"
-              class="ui-input"
-              type="text"
-              inputmode="text"
-              maxlength="8"
-              autocomplete="off"
-              placeholder="ABC-123"
-              formControlName="numberPlate"
-              (input)="normalizePlate($event)"
-            />
-            <span class="ui-affix">
-              <app-ui-icon name="car" [size]="18" />
-            </span>
-          </app-ui-form-field>
-
-          <app-ui-form-field
             label="Tipo de vehículo"
             inputId="vehicle-type"
             [error]="
@@ -176,8 +192,32 @@
             </span>
           </app-ui-form-field>
 
+          <app-ui-form-field
+            label="Placa"
+            inputId="number-plate"
+            [hint]="'Ejemplo: ' + plateExample()"
+            [error]="plateError()"
+          >
+            <input
+              id="number-plate"
+              class="ui-input"
+              type="text"
+              inputmode="text"
+              [attr.maxlength]="plateMaxLength"
+              autocomplete="off"
+              [placeholder]="plateExample()"
+              formControlName="numberPlate"
+              (input)="normalizePlate($event)"
+            />
+            <span class="ui-affix">
+              <app-ui-icon [name]="vehicleIcon()" [size]="18" />
+            </span>
+          </app-ui-form-field>
+
           @if (errorMessage(); as message) {
-            <app-ui-alert tone="danger">{{ message }}</app-ui-alert>
+            <app-ui-alert tone="danger" (closed)="errorMessage.set(null)">{{
+              message
+            }}</app-ui-alert>
           }
 
           <div class="form__actions">

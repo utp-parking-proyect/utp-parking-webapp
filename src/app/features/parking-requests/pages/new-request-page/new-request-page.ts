@@ -7,23 +7,49 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import {
+  FormBuilder,
+  FormControl,
+  ReactiveFormsModule,
+  ValidatorFn,
+  Validators,
+} from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { apiErrorMessage } from '../../../../core/parking/api-error.util';
 import { ParkingRequestIn } from '../../../../core/parking/models/parking-request.model';
+import { VehicleDetail } from '../../../../core/parking/models/vehicle.model';
+import {
+  PLATE_MAX_LENGTH,
+  formatPlate,
+  isValidPlate,
+  plateErrorFor,
+  plateExampleFor,
+} from '../../../../core/parking/number-plate.util';
 import { ParkingRequestService } from '../../../../core/parking/parking-request.service';
 import { VEHICLE_TYPES } from '../../../../core/parking/parking.constants';
+import { VehicleService } from '../../../../core/parking/vehicle.service';
+import { vehicleIconFor } from '../../../../core/parking/vehicle-icon.util';
 import { UiAlert } from '../../../../shared/components/ui-alert/ui-alert';
+import { UiBadge } from '../../../../shared/components/ui-badge/ui-badge';
 import { UiButton } from '../../../../shared/components/ui-button/ui-button';
 import { UiCard } from '../../../../shared/components/ui-card/ui-card';
 import { UiFormField } from '../../../../shared/components/ui-form-field/ui-form-field';
 import { UiIcon } from '../../../../shared/components/ui-icon/ui-icon';
 import { RequestCard } from '../../components/request-card/request-card';
 
-const PLATE_PATTERN = /^[A-Z0-9]{3,4}-?[A-Z0-9]{2,4}$/;
+type FormStep = 'loading' | 'limit-reached' | 'select' | 'empty' | 'new-vehicle';
 
-type FormStep = 'loading' | 'select' | 'empty' | 'new-vehicle';
+const plateFormatValidator: ValidatorFn = (control) => {
+  const plate = control.value as string;
+  const idVehicleType = control.parent?.get('vehicleType')?.value as number | null;
+
+  if (!plate || idVehicleType === null || idVehicleType === undefined) {
+    return null;
+  }
+
+  return isValidPlate(plate, idVehicleType) ? null : { plateFormat: true };
+};
 
 @Component({
   selector: 'app-new-request-page',
@@ -33,6 +59,7 @@ type FormStep = 'loading' | 'select' | 'empty' | 'new-vehicle';
     RouterLink,
     RequestCard,
     UiAlert,
+    UiBadge,
     UiButton,
     UiCard,
     UiFormField,
@@ -44,24 +71,48 @@ type FormStep = 'loading' | 'select' | 'empty' | 'new-vehicle';
 export class NewRequestPage {
   private readonly formBuilder = inject(FormBuilder);
   private readonly parkingRequestService = inject(ParkingRequestService);
+  private readonly vehicleService = inject(VehicleService);
 
   protected readonly vehicleTypes = VEHICLE_TYPES;
-  protected readonly vehicles = this.parkingRequestService.vehicles;
-  protected readonly vehiclesLoading = this.parkingRequestService.isLoading;
-  protected readonly vehiclesFailed = this.parkingRequestService.hasFailed;
+  protected readonly vehicles = this.vehicleService.vehicles;
+  protected readonly vehiclesLoading = this.vehicleService.isLoading;
+  protected readonly vehiclesFailed = this.vehicleService.hasFailed;
+  protected readonly vehiclesLimitReached = this.vehicleService.hasReachedLimit;
+  protected readonly maxAssignedVehicles = this.vehicleService.maxAssignedVehicles;
+
+  protected readonly maxRequestsPerCycle = this.parkingRequestService.maxRequestsPerCycle;
+  protected readonly cycleRequests = computed(
+    () => this.parkingRequestService.currentCycleRequests().length,
+  );
+  protected readonly cycleLimitReached = this.parkingRequestService.hasReachedCycleLimit;
+  private readonly requestsLoading = this.parkingRequestService.isLoading;
 
   protected readonly existingForm = this.formBuilder.nonNullable.group({
     numberPlate: ['', Validators.required],
   });
 
   protected readonly newVehicleForm = this.formBuilder.group({
+    vehicleType: this.formBuilder.control<number | null>(null, Validators.required),
     numberPlate: this.formBuilder.nonNullable.control('', [
       Validators.required,
-      Validators.maxLength(8),
-      Validators.pattern(PLATE_PATTERN),
+      Validators.maxLength(PLATE_MAX_LENGTH),
+      plateFormatValidator,
     ]),
-    vehicleType: this.formBuilder.control<number | null>(null, Validators.required),
   });
+
+  private readonly selectedVehicleType = toSignal(
+    this.newVehicleForm.controls.vehicleType.valueChanges,
+    { initialValue: this.newVehicleForm.controls.vehicleType.value },
+  );
+
+  protected readonly plateExample = computed(() => plateExampleFor(this.selectedVehicleType()));
+  protected readonly plateMaxLength = PLATE_MAX_LENGTH;
+
+  protected readonly vehicleIcon = computed(() =>
+    vehicleIconFor(
+      VEHICLE_TYPES.find((type) => type.idVehicleType === this.selectedVehicleType())?.name,
+    ),
+  );
 
   private readonly registeringNewVehicle = signal(false);
 
@@ -79,8 +130,11 @@ export class NewRequestPage {
   );
 
   protected readonly step = computed<FormStep>(() => {
-    if (this.vehiclesLoading()) {
+    if (this.vehiclesLoading() || this.requestsLoading()) {
       return 'loading';
+    }
+    if (this.cycleLimitReached()) {
+      return 'limit-reached';
     }
     if (this.registeringNewVehicle() || this.vehiclesFailed()) {
       return 'new-vehicle';
@@ -106,6 +160,18 @@ export class NewRequestPage {
         control.setValue(firstVehicle.numberPlate);
       }
     });
+
+    this.newVehicleForm.controls.vehicleType.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe((idVehicleType) => {
+        const control = this.newVehicleForm.controls.numberPlate;
+        control.setValue(formatPlate(control.value, idVehicleType), { emitEvent: false });
+        control.updateValueAndValidity({ emitEvent: false });
+      });
+  }
+
+  iconFor(vehicle: VehicleDetail): ReturnType<typeof vehicleIconFor> {
+    return vehicleIconFor(vehicle.vehicleType);
   }
 
   errorFor(
@@ -113,6 +179,16 @@ export class NewRequestPage {
     message: string,
   ): string | null {
     return control.invalid && control.touched ? message : null;
+  }
+
+  plateError(): string | null {
+    const control = this.newVehicleForm.controls.numberPlate;
+    if (control.valid || !control.touched) {
+      return null;
+    }
+    return control.hasError('plateFormat')
+      ? plateErrorFor(this.newVehicleForm.controls.vehicleType.value)
+      : 'Ingresa la placa de tu vehículo.';
   }
 
   registerNewVehicle(): void {
@@ -127,7 +203,7 @@ export class NewRequestPage {
 
   normalizePlate(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const plate = input.value.toUpperCase().replace(/\s+/g, '');
+    const plate = formatPlate(input.value, this.newVehicleForm.controls.vehicleType.value);
 
     input.value = plate;
     this.newVehicleForm.controls.numberPlate.setValue(plate);
@@ -135,7 +211,7 @@ export class NewRequestPage {
   }
 
   submit(): void {
-    if (this.submitting()) {
+    if (this.submitting() || this.cycleLimitReached()) {
       return;
     }
 
@@ -153,6 +229,7 @@ export class NewRequestPage {
         this.submittedPlate.set(payload.numberPlate);
         this.createdRequestId.set(response.parkingRequestId);
         this.parkingRequestService.reload();
+        this.vehicleService.reload();
       },
       error: (error: HttpErrorResponse) => {
         this.submitting.set(false);

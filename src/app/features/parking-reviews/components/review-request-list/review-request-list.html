@@ -1,0 +1,71 @@
+<table class="reviews-table">
+  <caption class="sr-only">
+    {{ caption() }}
+  </caption>
+  <thead>
+    <tr>
+      <th scope="col">N.° solicitud</th>
+      @if (showKind()) {
+        <th scope="col">Tipo</th>
+      }
+      <th scope="col">Vehículo</th>
+      <th scope="col">Solicitante</th>
+      <th scope="col">Ciclo</th>
+      <th scope="col">Fecha</th>
+      <th scope="col">Estado</th>
+      <th scope="col"><span class="sr-only">Acciones</span></th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (item of items(); track trackBy($index, item)) {
+      <tr>
+        <td data-label="N.° solicitud">
+          <span class="reviews-table__id">#{{ item.id }}</span>
+        </td>
+
+        @if (showKind()) {
+          <td data-label="Tipo">
+            <span class="reviews-table__kind" [class]="'reviews-table__kind--' + item.kind">
+              <app-ui-icon [name]="kindIcon(item)" [size]="14" />
+              <span>{{ kindLabel(item) }}</span>
+            </span>
+          </td>
+        }
+
+        <td data-label="Vehículo">
+          <span class="reviews-table__plate">
+            <app-ui-icon [name]="vehicleIcon(item)" [size]="16" />
+            <strong>{{ item.numberPlate }}</strong>
+          </span>
+          <span class="reviews-table__muted">{{ item.vehicleType }}</span>
+        </td>
+
+        <td data-label="Solicitante">
+          <span class="reviews-table__applicant">{{ item.applicantName }}</span>
+          <span class="reviews-table__muted">{{ item.username }}</span>
+        </td>
+
+        <td data-label="Ciclo">{{ item.cycle || '—' }}</td>
+
+        <td data-label="Fecha">
+          @if (toDate(item.dateRequest); as dateRequest) {
+            {{ dateRequest | date: 'dd/MM/yyyy' }}
+          } @else {
+            &mdash;
+          }
+        </td>
+
+        <td data-label="Estado">
+          <app-ui-badge [tone]="statusTone(item)">{{ item.status | statusLabel }}</app-ui-badge>
+        </td>
+
+        <td class="reviews-table__action">
+          <a class="reviews-table__link" [routerLink]="detailRoute(item)">
+            <span>Ver detalle</span>
+            <app-ui-icon name="chevron-right" [size]="16" />
+          </a>
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>

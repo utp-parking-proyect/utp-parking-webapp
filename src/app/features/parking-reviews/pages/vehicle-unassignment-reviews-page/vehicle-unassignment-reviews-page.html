@@ -1,0 +1,118 @@
+<header class="page-header">
+  <div>
+    <h1 class="page-header__title">Desasignación de vehículos</h1>
+    <p class="page-header__subtitle">
+      Solicitudes para dejar de usar un vehículo, asignadas para tu revisión. Al aprobarlas, el
+      vehículo deja de pertenecer al solicitante y conserva su historial de solicitudes.
+    </p>
+  </div>
+
+  <app-ui-button variant="secondary" size="lg" [disabled]="isLoading()" (click)="reload()">
+    <app-ui-icon name="refresh" [size]="18" />
+    Actualizar
+  </app-ui-button>
+</header>
+
+<a
+  class="crosslink"
+  routerLink="/revisiones"
+  [queryParams]="{ vista: 'revisadas', tipo: 'unassignment' }"
+>
+  <span class="crosslink__icon" aria-hidden="true">
+    <app-ui-icon name="history" [size]="18" />
+  </span>
+  <span class="crosslink__text">
+    Consulta las desasignaciones que ya respondiste en el historial de revisiones.
+  </span>
+  <app-ui-icon name="chevron-right" [size]="16" />
+</a>
+
+@if (feedback(); as message) {
+  <div class="feedback">
+    <app-ui-alert tone="success">{{ message }}</app-ui-alert>
+  </div>
+}
+
+@if (isLoading()) {
+  <app-ui-card>
+    <p class="state">
+      <span class="state__spinner" aria-hidden="true"></span>
+      <span>Cargando solicitudes…</span>
+    </p>
+  </app-ui-card>
+} @else if (hasFailed()) {
+  <app-ui-card>
+    <app-ui-alert tone="danger">
+      No pudimos cargar las solicitudes de desasignación. Inténtalo nuevamente en unos minutos.
+    </app-ui-alert>
+    <div class="state__actions">
+      <app-ui-button variant="secondary" (click)="reload()">Reintentar</app-ui-button>
+    </div>
+  </app-ui-card>
+} @else if (pendingRequests().length) {
+  <div class="requests">
+    @for (request of pendingRequests(); track request.idUnassignmentRequest) {
+      <app-ui-card>
+        <div class="request">
+          <header class="request__head">
+            <span class="request__icon">
+              <app-ui-icon name="car" [size]="20" />
+            </span>
+
+            <div class="request__identity">
+              <h2 class="request__title">Solicitud de desasignación</h2>
+              <p class="request__number">N.° {{ request.idUnassignmentRequest }}</p>
+            </div>
+
+            <app-ui-badge [tone]="statusTone(request)">
+              {{ request.status | statusLabel }}
+            </app-ui-badge>
+          </header>
+
+          <dl class="request__summary">
+            <div>
+              <dt>Solicitante</dt>
+              <dd>{{ applicantName(request) }}</dd>
+            </div>
+            <div>
+              <dt>Usuario</dt>
+              <dd>{{ request.applicant.usernameApplicant }}</dd>
+            </div>
+            <div>
+              <dt>Vehículo</dt>
+              <dd>{{ request.vehicle.vehicleType }}</dd>
+            </div>
+            <div>
+              <dt>Placa</dt>
+              <dd>{{ request.vehicle.numberPlate }}</dd>
+            </div>
+          </dl>
+
+          <div class="request__reason">
+            <p class="request__reason-label">Motivo</p>
+            <p class="request__reason-text">{{ request.reason }}</p>
+          </div>
+
+          <div class="request__actions">
+            <app-ui-button [routerLink]="['/revisiones-vehiculos', request.idUnassignmentRequest]">
+              Revisar solicitud
+              <app-ui-icon name="chevron-right" [size]="16" />
+            </app-ui-button>
+          </div>
+        </div>
+      </app-ui-card>
+    }
+  </div>
+} @else {
+  <app-ui-card>
+    <div class="empty">
+      <span class="empty__icon">
+        <app-ui-icon name="inbox" [size]="26" />
+      </span>
+      <h2 class="empty__title">No tienes solicitudes de desasignación pendientes</h2>
+      <p class="empty__description">
+        Las solicitudes que los usuarios envíen para dejar de usar sus vehículos aparecerán aquí.
+      </p>
+    </div>
+  </app-ui-card>
+}

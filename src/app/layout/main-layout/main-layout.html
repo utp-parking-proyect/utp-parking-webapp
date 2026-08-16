@@ -11,22 +11,26 @@
     </button>
 
     <nav class="shell__nav" aria-label="Navegación principal">
-      @for (item of navItems; track item.route) {
+      @for (item of navItems(); track item.label) {
         <a
+          #navItemRef
           class="shell__nav-item"
           [routerLink]="item.route"
+          [queryParams]="item.queryParams"
           routerLinkActive="shell__nav-item--active"
           [routerLinkActiveOptions]="{ exact: !!item.exact }"
+          [attr.title]="sidebarExpanded() ? null : item.label"
+          [attr.aria-label]="item.label"
           (click)="closeSidebar()"
         >
           <app-ui-icon [name]="item.icon" [size]="22" />
-          <span class="shell__nav-label">{{ item.label }}</span>
+          <span class="shell__nav-label">{{ navLabel(item) }}</span>
         </a>
       }
     </nav>
   </aside>
 
-  @if (sidebarExpanded()) {
+  @if (sidebarExpanded() && !guideOpen()) {
     <div class="shell__scrim" (click)="closeSidebar()"></div>
   }
 
@@ -48,6 +52,18 @@
       </div>
 
       <div class="shell__topbar-end">
+        @if (guideAvailable()) {
+          <button
+            type="button"
+            class="shell__help"
+            aria-label="Ver la guía de uso de UTP+ Parking"
+            title="Guía de uso"
+            (click)="openGuide()"
+          >
+            <app-ui-icon name="help-circle" [size]="22" />
+          </button>
+        }
+
         <div class="shell__user">
           <button
             type="button"
@@ -103,4 +119,18 @@
       <router-outlet />
     </main>
   </div>
+
+  @if (guideOpen() && guideStep(); as step) {
+    <app-nav-guide
+      [icon]="step.item.icon"
+      [label]="step.item.label"
+      [description]="step.description"
+      [index]="guideIndex()"
+      [total]="guideSteps().length"
+      [anchor]="guideAnchor()"
+      [expanded]="sidebarExpanded()"
+      (next)="nextGuideStep()"
+      (closed)="closeGuide()"
+    />
+  }
 </div>
